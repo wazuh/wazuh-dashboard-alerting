@@ -90,11 +90,7 @@ export class AlertingPlugin implements Plugin<void, AlertingStart, AlertingSetup
       id: PLUGIN_NAME,
       title: 'Alerting',
       description: 'OpenSearch Dashboards Alerting Plugin',
-      category: {
-        id: 'opensearch',
-        label: 'OpenSearch Plugins',
-        order: 2000,
-      },
+      category: DEFAULT_APP_CATEGORIES.explore,
       order: 4000,
       mount: async (params) => {
         const { renderApp } = await import('./app');
