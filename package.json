@@ -4,6 +4,14 @@
   "description": "OpenSearch Dashboards Alerting Plugin",
   "main": "index.js",
   "license": "Apache-2.0",
+  "opensearchDashboards": {
+    "version": "3.5.0",
+    "templateVersion": "3.5.0"
+  },
+  "wazuh": {
+    "version": "5.0.0",
+    "revision": "00"
+  },
   "homepage": "https://github.com/opensearch-project/alerting-dashboards-plugin",
   "repository": {
     "type": "git",
