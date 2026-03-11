@@ -6,9 +6,10 @@
 import React from 'react';
 import _ from 'lodash';
 import { EuiPanel, EuiText, EuiSpacer } from '@elastic/eui';
-import Action from '../../components/Action';
-import ActionEmptyPrompt from '../../components/ActionEmptyPrompt';
-import AddActionButton from '../../components/AddActionButton';
+// Wazuh
+import Action from '../../components/Action/EnhancedAction';
+import ActionEmptyPrompt from '../../components/ActionEmptyPrompt/EnhancedActionEmptyPrompt';
+import AddActionButton from '../../components/AddActionButton/EnhancedAddActionButton';
 import { getAllowList } from '../../../Destinations/utils/helpers';
 import {
   MAX_QUERY_RESULT_SIZE,
@@ -20,7 +21,8 @@ import { backendErrorNotification } from '../../../../utils/helpers';
 import { TRIGGER_TYPE } from '../CreateTrigger/utils/constants';
 import { formikToTrigger } from '../CreateTrigger/utils/formikToTrigger';
 import { getChannelOptions, toChannelType } from '../../utils/helper';
-import { getInitialActionValues } from '../../components/AddActionButton/utils';
+// Wazuh
+import { getInitialActionValues } from '../../components/AddActionButton/enhanced-utils';
 import { getDataSourceId } from '../../../utils/helpers';
 
 const createActionContext = (context, action) => {
@@ -199,7 +201,8 @@ class ConfigureActions extends React.Component {
 
       const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
       const actions = _.get(values, `${fieldPath}actions`, []);
-      const initialActionValues = getInitialActionValues({ monitorType, flyoutMode, actions });
+      // Wazuh
+      const initialActionValues = getInitialActionValues({ monitorType, flyoutMode, actions, actionType: 'notification' });
 
       // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
       if (
