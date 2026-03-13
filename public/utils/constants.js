@@ -56,7 +56,7 @@ export const DATA_TYPES = {
 };
 
 export const OS_AD_PLUGIN = 'opensearch-anomaly-detection';
-export const OS_NOTIFICATION_PLUGIN = 'opensearch-notifications';
+export const OS_NOTIFICATION_PLUGIN = 'wazuh-indexer-notifications'; // Wazuh
 export const OPENSEARCH_DASHBOARDS_AD_PLUGIN = 'anomaly-detection-dashboards';
 
 export const INPUTS_DETECTOR_ID = '0.search.query.query.bool.filter[1].term.detector_id.value';

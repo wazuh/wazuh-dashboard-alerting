@@ -153,8 +153,37 @@ class ConfigureActions extends React.Component {
       }
     };
 
+    // Wazuh
+    const getActiveResponsesChannels = async () => {
+      const getChannelsQuery = {
+        from_index: index,
+        max_items: MAX_CHANNELS_RESULT_SIZE,
+        config_type: 'active_response',
+        sort_field: 'name',
+        sort_order: 'asc',
+      };
+
+      const channelsResponse = await this.props.notificationService.getChannels(getChannelsQuery);
+
+      channels = channels.concat(
+        channelsResponse.items.map((channel) => ({
+          label: `[Active response] ${channel.name}`,
+          value: channel.config_id,
+          type: channel.config_type,
+          description: channel.description,
+        }))
+      );
+
+      if (channelsResponse.total && channels.length < channelsResponse.total) {
+        index += MAX_CHANNELS_RESULT_SIZE;
+        await getActiveResponsesChannels();
+      }
+    };
+
     if (hasNotificationPlugin) {
       await getChannels();
+      // Wazuh
+      await getActiveResponsesChannels();
     }
 
     return channels;

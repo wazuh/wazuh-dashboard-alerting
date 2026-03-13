@@ -130,7 +130,7 @@ const Action = ({
 
   const renderChannels = () => {
     const placeHolderText = actionType === 'notification' ? 'Select channel to notify' : 'Select active response to execute';
-    const options = actionType === 'notification' ? destinations : destinations.filter(dest => dest.key === 'active_response');
+    const options = actionType === 'notification' ? destinations.filter(dest => dest.key !== 'active_response') : destinations.filter(dest => dest.key === 'active_response');
     return (
       <div>
         <EuiFlexGroup wrap>
