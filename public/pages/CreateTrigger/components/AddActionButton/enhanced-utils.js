@@ -9,11 +9,14 @@ import { FORMIK_INITIAL_ACTION_VALUES } from '../../utils/constants';
 import { getDigitId, getUniqueName } from '../../../../utils/helpers';
 import { NOTIFY_OPTIONS_VALUES } from '../Action/actions/Message';
 
+const ACTIVE_RESPONSE_MESSAGE_TEMPLATE = '{{ctx.alerts.0.related_doc_ids}}';
+
 const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) => {
   const initialActionValues = _.cloneDeep(FORMIK_INITIAL_ACTION_VALUES);
 
   initialActionValues.subject_template.source = 'Alerting Active Response action';
-  initialActionValues.message_template.source = 'Alerting Active Response message'; // TODO: interpolate monitor and active response variables if possible
+  initialActionValues.message_template.source = ACTIVE_RESPONSE_MESSAGE_TEMPLATE;
+
 
   const id = getDigitId();
   initialActionValues.id = `activeResponse${id}`;
