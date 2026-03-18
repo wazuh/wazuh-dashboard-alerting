@@ -13,7 +13,7 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
   const initialActionValues = _.cloneDeep(FORMIK_INITIAL_ACTION_VALUES);
 
   initialActionValues.subject_template.source = 'Alerting Active Response action';
-  initialActionValues.message_template.source = '';
+  initialActionValues.message_template.source = 'Alerting Active Response message'; // TODO: interpolate monitor and active response variables if possible
 
   const id = getDigitId();
   initialActionValues.id = `activeResponse${id}`;
