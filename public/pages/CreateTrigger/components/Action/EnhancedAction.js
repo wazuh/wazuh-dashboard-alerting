@@ -36,6 +36,7 @@ import {
 import NotificationsCallOut from '../NotificationsCallOut';
 import MinimalAccordion from '../../../../components/FeatureAnywhereContextMenu/MinimalAccordion';
 import { getActionTypeFromAction, getManageChannelsUrl } from '../../../../utils/helpers';
+import { ACTION_TYPE } from '../../../../utils/constants';
 
 const Action = ({
   action,
@@ -74,13 +75,13 @@ const Action = ({
   const actionLabelNotification = 'Notification';
   const actionLabelActiveResponse = 'Active Response';
 
-  if (actionType === 'notification') {
+  if (actionType === ACTION_TYPE.NOTIFICATION) {
     if (type === 'webhook') {
       ActionComponent = webhookNotificationActionMessageComponent;
     } else {
       ActionComponent = defaultNotificationActionMessageComponent;
     }
-  }else if (actionType === 'active_response') {
+  } else if (actionType === ACTION_TYPE.ACTIVE_RESPONSE) {
     ActionComponent = activeResponseActionMessageComponent;
   }
 
@@ -129,8 +130,14 @@ const Action = ({
   };
 
   const renderChannels = () => {
-    const placeHolderText = actionType === 'notification' ? 'Select channel to notify' : 'Select active response to execute';
-    const options = actionType === 'notification' ? destinations.filter(dest => dest.key !== 'active_response') : destinations.filter(dest => dest.key === 'active_response');
+    const placeHolderText =
+      actionType === ACTION_TYPE.NOTIFICATION
+        ? 'Select channel to notify'
+        : 'Select active response to execute';
+    const options =
+      actionType === ACTION_TYPE.NOTIFICATION
+        ? destinations.filter((dest) => dest.key !== ACTION_TYPE.ACTIVE_RESPONSE)
+        : destinations.filter((dest) => dest.key === ACTION_TYPE.ACTIVE_RESPONSE);
     return (
       <div>
         <EuiFlexGroup wrap>
@@ -223,14 +230,13 @@ const Action = ({
                 className: 'accordion-action',
                 buttonContent: (
                   <EuiText>
-                    {actionType === 'notification' ?
-                      !_.get(selectedDestination, '0.type', undefined)
+                    {actionType === 'notification'
+                      ? !_.get(selectedDestination, '0.type', undefined)
                         ? actionLabelNotification
                         : `${actionLabelNotification}: ${name}`
                       : !_.get(selectedDestination, '0.type', undefined)
-                        ? actionLabelActiveResponse
-                        : `${actionLabelActiveResponse}: ${name}`
-                    }
+                      ? actionLabelActiveResponse
+                      : `${actionLabelActiveResponse}: ${name}`}
                   </EuiText>
                 ),
                 extraAction: (

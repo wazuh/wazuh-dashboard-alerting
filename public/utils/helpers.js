@@ -19,7 +19,7 @@ import {
 } from '../services';
 import * as pluginManifest from '../../opensearch_dashboards.json';
 import semver from 'semver';
-import { SEVERITY_OPTIONS } from './constants';
+import { SEVERITY_OPTIONS, ACTION_TYPE } from './constants';
 import { ANALYTICS_ALL_OVERVIEW_CONTENT_AREAS } from '../../../../src/plugins/content_management/public';
 import { DataSourceAlertsCard } from '../components/DataSourceAlertsCard/DataSourceAlertsCard';
 
@@ -178,15 +178,15 @@ export function initManageChannelsUrl(httpClient) {
 }
 
 // Wazuh
-export function getManageChannelsUrl(actionType = 'notification') {
-  if (actionType === 'notification'){
+export function getManageChannelsUrl(actionType = ACTION_TYPE.NOTIFICATION) {
+  if (actionType === ACTION_TYPE.NOTIFICATION) {
     const relativePath = `/app/${
       getUseUpdatedUx() ? 'channels' : 'notifications-dashboards'
     }#/channels`;
     return MANAGE_CHANNELS_URL || relativePath;
   }
   // Wazuh
-  else if (actionType === 'active_response') {
+  else if (actionType === ACTION_TYPE.ACTIVE_RESPONSE) {
     const relativePath = `/app/${
       getUseUpdatedUx() ? 'channels' : 'active-responses' // TODO: review the usage of "channels" value when we have the updated UX
     }#/active-responses`;
@@ -240,9 +240,9 @@ export function registerAlertsCard() {
 // Wazuh
 export function getActionTypeFromAction(action) {
   if (action.id.startsWith('notification')) {
-    return 'notification';
+    return ACTION_TYPE.NOTIFICATION;
   } else if (action.id.startsWith('activeResponse')) {
-    return 'active_response';
+    return ACTION_TYPE.ACTIVE_RESPONSE;
   } else {
     throw new Error(`Unknown action id: ${action.id}`);
   }

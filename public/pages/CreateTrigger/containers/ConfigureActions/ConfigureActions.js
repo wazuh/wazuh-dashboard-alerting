@@ -24,6 +24,7 @@ import { getChannelOptions, toChannelType } from '../../utils/helper';
 // Wazuh
 import { getInitialActionValues } from '../../components/AddActionButton/enhanced-utils';
 import { getDataSourceId } from '../../../utils/helpers';
+import { ACTION_TYPE } from '../../../../utils/constants';
 
 const createActionContext = (context, action) => {
   let trigger = context.trigger;
@@ -129,7 +130,7 @@ class ConfigureActions extends React.Component {
       const getChannelsQuery = {
         from_index: index,
         max_items: MAX_CHANNELS_RESULT_SIZE,
-        config_type: configTypes,
+        config_type: configTypes.filter((type) => type !== ACTION_TYPE.ACTIVE_RESPONSE),
         sort_field: 'name',
         sort_order: 'asc',
       };
@@ -158,7 +159,7 @@ class ConfigureActions extends React.Component {
       const getChannelsQuery = {
         from_index: index,
         max_items: MAX_CHANNELS_RESULT_SIZE,
-        config_type: 'active_response',
+        config_type: ACTION_TYPE.ACTIVE_RESPONSE,
         sort_field: 'name',
         sort_order: 'asc',
       };
@@ -214,8 +215,8 @@ class ConfigureActions extends React.Component {
             description: '',
           }));
       } else if (response.totalMonitors !== 0) {
-          // If the config index is not created, don't show the notification
-          backendErrorNotification(notifications, 'load', 'destinations', response.err);
+        // If the config index is not created, don't show the notification
+        backendErrorNotification(notifications, 'load', 'destinations', response.err);
       }
 
       let channels = await this.getChannels();
@@ -231,7 +232,12 @@ class ConfigureActions extends React.Component {
       const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
       const actions = _.get(values, `${fieldPath}actions`, []);
       // Wazuh
-      const initialActionValues = getInitialActionValues({ monitorType, flyoutMode, actions, actionType: 'notification' });
+      const initialActionValues = getInitialActionValues({
+        monitorType,
+        flyoutMode,
+        actions,
+        actionType: ACTION_TYPE.NOTIFICATION,
+      });
 
       // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
       if (

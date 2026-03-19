@@ -8,6 +8,7 @@ import { getInitialActionValues as getInitialNotificationsValues } from './utils
 import { FORMIK_INITIAL_ACTION_VALUES } from '../../utils/constants';
 import { getDigitId, getUniqueName } from '../../../../utils/helpers';
 import { NOTIFY_OPTIONS_VALUES } from '../Action/actions/Message';
+import { ACTION_TYPE } from '../../../../utils/constants';
 
 const ACTIVE_RESPONSE_MESSAGE_TEMPLATE = '{{ctx.alerts.0.related_doc_ids}}';
 
@@ -16,7 +17,6 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
 
   initialActionValues.subject_template.source = 'Alerting Active Response action';
   initialActionValues.message_template.source = ACTIVE_RESPONSE_MESSAGE_TEMPLATE;
-
 
   const id = getDigitId();
   initialActionValues.id = `activeResponse${id}`;
@@ -27,11 +27,10 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
   initialActionValues.action_execution_policy = {
     action_execution_scope: {
       [NOTIFY_OPTIONS_VALUES.PER_ALERT]: {
-        'actionable_alerts': []
-      }
-    }
-  }
-
+        actionable_alerts: [],
+      },
+    },
+  };
 
   // Add name based on previous name;
   if (flyoutMode) {
@@ -39,20 +38,23 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
   }
 
   return initialActionValues;
-}
+};
 
-export const getInitialActionValues = ({ monitorType, flyoutMode, actions, actionType = 'notification' }) => {
-  
+export const getInitialActionValues = ({
+  monitorType,
+  flyoutMode,
+  actions,
+  actionType = ACTION_TYPE.NOTIFICATION,
+}) => {
   switch (actionType) {
-    case 'notification':{
+    case ACTION_TYPE.NOTIFICATION: {
       return getInitialNotificationsValues({ monitorType, flyoutMode, actions });
     }
-    case 'active_response': {
+    case ACTION_TYPE.ACTIVE_RESPONSE: {
       return getInitialActiveResponseValues({ monitorType, flyoutMode, actions });
     }
     default: {
       throw new Error(`Unknown action type: ${actionType}`);
     }
   }
-  
 };

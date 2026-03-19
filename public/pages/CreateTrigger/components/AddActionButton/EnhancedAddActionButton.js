@@ -7,7 +7,7 @@ import React from 'react';
 import _ from 'lodash';
 import { EuiButton, EuiSmallButtonEmpty, EuiPanel } from '@elastic/eui';
 import { getInitialActionValues } from './enhanced-utils';
-import { MONITOR_TYPE } from '../../../../utils/constants';
+import { MONITOR_TYPE, ACTION_TYPE } from '../../../../utils/constants';
 import './styles.scss';
 
 const AddActionButton = ({
@@ -23,7 +23,12 @@ const AddActionButton = ({
   const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const onClickNotification = () => {
     const actions = _.get(values, `${fieldPath}actions`, []);
-    const initialValues = getInitialActionValues({ monitorType, flyoutMode, actions, actionType: 'notification' });
+    const initialValues = getInitialActionValues({
+      monitorType,
+      flyoutMode,
+      actions,
+      actionType: ACTION_TYPE.NOTIFICATION,
+    });
     arrayHelpers.push(initialValues);
 
     if (onPostAdd) {
@@ -33,7 +38,12 @@ const AddActionButton = ({
 
   const onClickActiveResponse = () => {
     const actions = _.get(values, `${fieldPath}actions`, []);
-    const initialValues = getInitialActionValues({ monitorType, flyoutMode, actions, actionType: 'active_response' });
+    const initialValues = getInitialActionValues({
+      monitorType,
+      flyoutMode,
+      actions,
+      actionType: ACTION_TYPE.ACTIVE_RESPONSE,
+    });
     arrayHelpers.push(initialValues);
 
     if (onPostAdd) {
@@ -60,7 +70,15 @@ const AddActionButton = ({
     </EuiPanel>
   ) : (
     <>
-      <div style={{display: 'flex', gap: '8px', margin: '0 auto', maxWidth: '500px', justifyContent: 'center'}}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          margin: '0 auto',
+          maxWidth: '500px',
+          justifyContent: 'center',
+        }}
+      >
         <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
           {buttonNotificationText}
         </EuiButton>
