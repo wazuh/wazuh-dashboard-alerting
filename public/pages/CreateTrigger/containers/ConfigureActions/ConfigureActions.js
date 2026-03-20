@@ -16,6 +16,7 @@ import {
   MAX_CHANNELS_RESULT_SIZE,
   MONITOR_TYPE,
   OS_NOTIFICATION_PLUGIN,
+  BACKEND_CHANNEL_TYPE,
 } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
 import { TRIGGER_TYPE } from '../CreateTrigger/utils/constants';
@@ -24,6 +25,7 @@ import { getChannelOptions, toChannelType } from '../../utils/helper';
 // Wazuh
 import { getInitialActionValues } from '../../components/AddActionButton/enhanced-utils';
 import { getDataSourceId } from '../../../utils/helpers';
+import { isManagedChannelType } from '../../../../services/utils/helper';
 
 const createActionContext = (context, action) => {
   let trigger = context.trigger;
@@ -129,7 +131,7 @@ class ConfigureActions extends React.Component {
       const getChannelsQuery = {
         from_index: index,
         max_items: MAX_CHANNELS_RESULT_SIZE,
-        config_type: configTypes,
+        config_type: configTypes.filter((type) => !isManagedChannelType(type)), // Wazuh: filter out managed channels since they will be retrieved by a different function/s
         sort_field: 'name',
         sort_order: 'asc',
       };
@@ -154,11 +156,12 @@ class ConfigureActions extends React.Component {
     };
 
     // Wazuh
+    let indexActiveResponse = 0;
     const getActiveResponsesChannels = async () => {
       const getChannelsQuery = {
-        from_index: index,
+        from_index: indexActiveResponse,
         max_items: MAX_CHANNELS_RESULT_SIZE,
-        config_type: 'active_response',
+        config_type: BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE,
         sort_field: 'name',
         sort_order: 'asc',
       };
@@ -175,7 +178,7 @@ class ConfigureActions extends React.Component {
       );
 
       if (channelsResponse.total && channels.length < channelsResponse.total) {
-        index += MAX_CHANNELS_RESULT_SIZE;
+        indexActiveResponse += MAX_CHANNELS_RESULT_SIZE;
         await getActiveResponsesChannels();
       }
     };

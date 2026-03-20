@@ -8,6 +8,7 @@ import { getInitialActionValues as getInitialNotificationsValues } from './utils
 import { FORMIK_INITIAL_ACTION_VALUES } from '../../utils/constants';
 import { getDigitId, getUniqueName } from '../../../../utils/helpers';
 import { NOTIFY_OPTIONS_VALUES } from '../Action/actions/Message';
+import { MANAGED_CHANNEL_CATEGORY } from '../../../../utils/constants';
 
 const ACTIVE_RESPONSE_MESSAGE_TEMPLATE = '{{ctx.alerts.0.related_doc_ids}}';
 
@@ -44,10 +45,10 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
 export const getInitialActionValues = ({ monitorType, flyoutMode, actions, actionType = 'notification' }) => {
   
   switch (actionType) {
-    case 'notification':{
+    case MANAGED_CHANNEL_CATEGORY.NOTIFICATION:{
       return getInitialNotificationsValues({ monitorType, flyoutMode, actions });
     }
-    case 'active_response': {
+    case MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE: {
       return getInitialActiveResponseValues({ monitorType, flyoutMode, actions });
     }
     default: {

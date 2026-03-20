@@ -36,6 +36,8 @@ import {
 import NotificationsCallOut from '../NotificationsCallOut';
 import MinimalAccordion from '../../../../components/FeatureAnywhereContextMenu/MinimalAccordion';
 import { getActionTypeFromAction, getManageChannelsUrl } from '../../../../utils/helpers';
+import { MANAGED_CHANNEL_CATEGORY } from '../../../../utils/constants';
+import { isManagedChannelType } from '../../../../services/utils/helper';
 
 const Action = ({
   action,
@@ -80,7 +82,7 @@ const Action = ({
     } else {
       ActionComponent = defaultNotificationActionMessageComponent;
     }
-  }else if (actionType === 'active_response') {
+  }else if (actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE) { // Wazuh: active response action type
     ActionComponent = activeResponseActionMessageComponent;
   }
 
@@ -129,8 +131,15 @@ const Action = ({
   };
 
   const renderChannels = () => {
-    const placeHolderText = actionType === 'notification' ? 'Select channel to notify' : 'Select active response to execute';
-    const options = actionType === 'notification' ? destinations.filter(dest => dest.key !== 'active_response') : destinations.filter(dest => dest.key === 'active_response');
+    let placeHolderText = '';
+    let options = [];
+    if (actionType === MANAGED_CHANNEL_CATEGORY.NOTIFICATION) {
+      placeHolderText = 'Select channel to notify';
+      options = destinations.filter(dest => !isManagedChannelType(dest.key)); 
+    }else if (actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE) {
+      placeHolderText = 'Select active response to execute';
+      options = destinations.filter(dest => dest.key === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE);
+    }
     return (
       <div>
         <EuiFlexGroup wrap>
