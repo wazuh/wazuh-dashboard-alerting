@@ -17,6 +17,7 @@ import {
   MONITOR_TYPE,
   OS_NOTIFICATION_PLUGIN,
   BACKEND_CHANNEL_TYPE,
+  MANAGED_CHANNEL_CATEGORY,
 } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
 import { TRIGGER_TYPE } from '../CreateTrigger/utils/constants';
@@ -217,8 +218,8 @@ class ConfigureActions extends React.Component {
             description: '',
           }));
       } else if (response.totalMonitors !== 0) {
-          // If the config index is not created, don't show the notification
-          backendErrorNotification(notifications, 'load', 'destinations', response.err);
+        // If the config index is not created, don't show the notification
+        backendErrorNotification(notifications, 'load', 'destinations', response.err);
       }
 
       let channels = await this.getChannels();
@@ -234,7 +235,12 @@ class ConfigureActions extends React.Component {
       const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
       const actions = _.get(values, `${fieldPath}actions`, []);
       // Wazuh
-      const initialActionValues = getInitialActionValues({ monitorType, flyoutMode, actions, actionType: 'notification' });
+      const initialActionValues = getInitialActionValues({
+        monitorType,
+        flyoutMode,
+        actions,
+        actionType: MANAGED_CHANNEL_CATEGORY.NOTIFICATION,
+      });
 
       // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
       if (

@@ -60,7 +60,15 @@ const AddActionButton = ({
     </EuiPanel>
   ) : (
     <>
-      <div style={{display: 'flex', gap: '8px', margin: '0 auto', maxWidth: '500px', justifyContent: 'center'}}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          margin: '0 auto',
+          maxWidth: '500px',
+          justifyContent: 'center',
+        }}
+      >
         <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
           {buttonNotificationText}
         </EuiButton>

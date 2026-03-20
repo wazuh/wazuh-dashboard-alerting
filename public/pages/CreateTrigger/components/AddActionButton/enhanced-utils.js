@@ -18,7 +18,6 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
   initialActionValues.subject_template.source = 'Alerting Active Response action';
   initialActionValues.message_template.source = ACTIVE_RESPONSE_MESSAGE_TEMPLATE;
 
-
   const id = getDigitId();
   initialActionValues.id = `activeResponse${id}`;
 
@@ -28,11 +27,10 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
   initialActionValues.action_execution_policy = {
     action_execution_scope: {
       [NOTIFY_OPTIONS_VALUES.PER_ALERT]: {
-        'actionable_alerts': []
-      }
-    }
-  }
-
+        actionable_alerts: [],
+      },
+    },
+  };
 
   // Add name based on previous name;
   if (flyoutMode) {
@@ -40,10 +38,14 @@ const getInitialActiveResponseValues = ({ monitorType, flyoutMode, actions }) =>
   }
 
   return initialActionValues;
-}
+};
 
-export const getInitialActionValues = ({ monitorType, flyoutMode, actions, actionType = 'notification' }) => {
-  
+export const getInitialActionValues = ({
+  monitorType,
+  flyoutMode,
+  actions,
+  actionType = MANAGED_CHANNEL_CATEGORY.NOTIFICATION,
+}) => {
   switch (actionType) {
     case MANAGED_CHANNEL_CATEGORY.NOTIFICATION:{
       return getInitialNotificationsValues({ monitorType, flyoutMode, actions });
@@ -55,5 +57,4 @@ export const getInitialActionValues = ({ monitorType, flyoutMode, actions, actio
       throw new Error(`Unknown action type: ${actionType}`);
     }
   }
-  
 };

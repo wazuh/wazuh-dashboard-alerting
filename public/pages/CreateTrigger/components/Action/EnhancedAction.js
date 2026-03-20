@@ -76,7 +76,7 @@ const Action = ({
   const actionLabelNotification = 'Notification';
   const actionLabelActiveResponse = 'Active Response';
 
-  if (actionType === 'notification') {
+  if (actionType === MANAGED_CHANNEL_CATEGORY.NOTIFICATION) {
     if (type === 'webhook') {
       ActionComponent = webhookNotificationActionMessageComponent;
     } else {
@@ -232,14 +232,13 @@ const Action = ({
                 className: 'accordion-action',
                 buttonContent: (
                   <EuiText>
-                    {actionType === 'notification' ?
-                      !_.get(selectedDestination, '0.type', undefined)
+                    {actionType === 'notification'
+                      ? !_.get(selectedDestination, '0.type', undefined)
                         ? actionLabelNotification
                         : `${actionLabelNotification}: ${name}`
                       : !_.get(selectedDestination, '0.type', undefined)
-                        ? actionLabelActiveResponse
-                        : `${actionLabelActiveResponse}: ${name}`
-                    }
+                      ? actionLabelActiveResponse
+                      : `${actionLabelActiveResponse}: ${name}`}
                   </EuiText>
                 ),
                 extraAction: (
