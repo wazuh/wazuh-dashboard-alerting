@@ -19,7 +19,7 @@ import {
 } from '../services';
 import * as pluginManifest from '../../opensearch_dashboards.json';
 import semver from 'semver';
-import { SEVERITY_OPTIONS } from './constants';
+import { MANAGED_CHANNEL_CATEGORY, SEVERITY_OPTIONS } from './constants';
 import { ANALYTICS_ALL_OVERVIEW_CONTENT_AREAS } from '../../../../src/plugins/content_management/public';
 import { DataSourceAlertsCard } from '../components/DataSourceAlertsCard/DataSourceAlertsCard';
 
@@ -153,6 +153,8 @@ export const titleTemplate = (title, subTitle) => (
 
 // This is updated to include the server.basepath during plugin's first render inside app.js using `initManageChannelsUrl` function
 export let MANAGE_CHANNELS_URL = undefined;
+// Wazuh
+export let MANAGE_ACTIVE_RESPONSES_CHANNELS_URL = undefined;
 // export const manageChannelsRelativePath = `/app/notifications-dashboards#/channels`;
 
 export function initManageChannelsUrl(httpClient) {
@@ -164,13 +166,32 @@ export function initManageChannelsUrl(httpClient) {
       withoutClientBasePath: true,
     });
   }
+  // Wazuh
+  if (!MANAGE_ACTIVE_RESPONSES_CHANNELS_URL) {
+    const relativePath = `/app/${
+      getUseUpdatedUx() ? 'channels' : 'active-responses'
+    }#/active-responses`;
+    MANAGE_ACTIVE_RESPONSES_CHANNELS_URL = httpClient.basePath.prepend(relativePath, {
+      withoutClientBasePath: true,
+    });
+  }
 }
 
-export function getManageChannelsUrl() {
-  const relativePath = `/app/${
-    getUseUpdatedUx() ? 'channels' : 'notifications-dashboards'
-  }#/channels`;
-  return MANAGE_CHANNELS_URL || relativePath;
+// Wazuh
+export function getManageChannelsUrl(actionType = MANAGED_CHANNEL_CATEGORY.NOTIFICATION) {
+  if (actionType === MANAGED_CHANNEL_CATEGORY.NOTIFICATION) {
+    const relativePath = `/app/${
+      getUseUpdatedUx() ? 'channels' : 'notifications-dashboards'
+    }#/channels`;
+    return MANAGE_CHANNELS_URL || relativePath;
+  }
+  // Wazuh
+  else if (actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE) {
+    const relativePath = `/app/${
+      getUseUpdatedUx() ? 'channels' : 'active-responses' // TODO: review the usage of "channels" value when we have the updated UX
+    }#/active-responses`;
+    return MANAGE_ACTIVE_RESPONSES_CHANNELS_URL || relativePath;
+  }
 }
 
 export function dataSourceFilterFn(dataSource) {
@@ -214,4 +235,15 @@ export function registerAlertsCard() {
       ),
     }),
   });
+}
+
+// Wazuh
+export function getActionTypeFromAction(action) {
+  if (action.id.startsWith('notification')) {
+    return MANAGED_CHANNEL_CATEGORY.NOTIFICATION;
+  } else if (action.id.startsWith('activeResponse')) {
+    return MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE;
+  } else {
+    throw new Error(`Unknown action id: ${action.id}`);
+  }
 }
