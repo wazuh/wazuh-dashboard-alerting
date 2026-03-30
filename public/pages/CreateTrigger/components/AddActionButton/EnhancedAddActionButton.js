@@ -50,13 +50,15 @@ const AddActionButton = ({
       >
         {buttonNotificationText}
       </EuiSmallButtonEmpty>
-      <EuiSmallButtonEmpty
-        onClick={onClickActiveResponse}
-        iconType="plusInCircle"
-        className="add-action-button__flyout-button"
-      >
-        {buttonActiveResponseText}
-      </EuiSmallButtonEmpty>
+      {monitorType === MONITOR_TYPE.DOC_LEVEL && (
+        <EuiSmallButtonEmpty
+          onClick={onClickActiveResponse}
+          iconType="plusInCircle"
+          className="add-action-button__flyout-button"
+        >
+          {buttonActiveResponseText}
+        </EuiSmallButtonEmpty>
+      )}
     </EuiPanel>
   ) : (
     <>
@@ -72,9 +74,11 @@ const AddActionButton = ({
         <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
           {buttonNotificationText}
         </EuiButton>
-        <EuiButton fill={false} size={'s'} onClick={onClickActiveResponse}>
-          {buttonActiveResponseText}
-        </EuiButton>
+        {monitorType === MONITOR_TYPE.DOC_LEVEL && (
+          <EuiButton fill={false} size={'s'} onClick={onClickActiveResponse}>
+            {buttonActiveResponseText}
+          </EuiButton>
+        )}
       </div>
     </>
   );
