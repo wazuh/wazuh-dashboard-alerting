@@ -231,25 +231,6 @@ class ConfigureActions extends React.Component {
         flattenedDestinations: destinationsAndChannels,
         loadingDestinations: false,
       });
-
-      const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
-      const actions = _.get(values, `${fieldPath}actions`, []);
-      // Wazuh
-      const initialActionValues = getInitialActionValues({
-        monitorType,
-        flyoutMode,
-        actions,
-        actionType: MANAGED_CHANNEL_CATEGORY.NOTIFICATION,
-      });
-
-      // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
-      if (
-        destinationsAndChannels.length > 0 &&
-        !_.get(values, `${fieldPath}actions`) &&
-        !actionDeleted
-      ) {
-        arrayHelpers.insert(0, initialActionValues);
-      }
     } catch (err) {
       console.error(err);
       this.setState({
