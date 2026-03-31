@@ -349,9 +349,12 @@ class DefineMonitor extends Component {
     // Cancel execution criteria
     switch (monitor_type) {
       case MONITOR_TYPE.DOC_LEVEL:
-        const { queries } = values;
-        const canExecute = searchType === SEARCH_TYPE.GRAPH && validDocLevelGraphQueries(queries);
-        if (!canExecute) return;
+        // Wazuh: fix conditional to only run validation for doc level graph queries
+        if (searchType === SEARCH_TYPE.GRAPH) {
+          const { queries } = values;
+          if (!validDocLevelGraphQueries(queries)) return;
+        }
+        break;
     }
     this.setState({ loadingResponse: true });
 
