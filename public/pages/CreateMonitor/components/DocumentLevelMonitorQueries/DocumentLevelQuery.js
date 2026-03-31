@@ -31,7 +31,7 @@ import { DATA_TYPES } from '../../../../utils/constants';
 import { getOperators } from '../MonitorExpressions/expressions/utils/whereHelpers';
 import { getDocLevelQueryOperators } from './utils/helpers';
 
-const ALLOWED_DATA_TYPES = ['number', 'text', 'keyword', 'boolean'];
+const ALLOWED_DATA_TYPES = ['number', 'text', 'keyword', 'boolean', 'date', 'ip']; // Wazuh: support date and ip types
 
 // TODO DRAFT: implement validation
 export const ILLEGAL_QUERY_NAME_CHARACTERS = [' '];
