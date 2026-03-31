@@ -11,3 +11,7 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 ### Changed
 
 - Changed category in the side menu to `Explore` [#4](https://github.com/wazuh/wazuh-dashboard-alerting/pull/4)
+
+### Fixed
+
+- Fixed request execution in Extraction Query Editor [#24](https://github.com/wazuh/wazuh-dashboard-alerting/pull/24)
