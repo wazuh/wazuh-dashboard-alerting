@@ -36,7 +36,7 @@ const ALLOWED_DATA_TYPES = ['number', 'text', 'keyword', 'boolean'];
 // TODO DRAFT: implement validation
 export const ILLEGAL_QUERY_NAME_CHARACTERS = [' '];
 
-const DEBOUNCE_DELAY = 300;
+const DEBOUNCE_DELAY = 500;
 
 class DocumentLevelQuery extends Component {
   constructor(props) {
