@@ -11,3 +11,4 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 ### Changed
 
 - Changed category in the side menu to `Explore` [#4](https://github.com/wazuh/wazuh-dashboard-alerting/pull/4)
+- Support `date` and `ip` type fields in document level queries [#22](https://github.com/wazuh/wazuh-dashboard-alerting/pull/22)
