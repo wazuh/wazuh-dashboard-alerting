@@ -296,7 +296,7 @@ class DefineMonitor extends Component {
         case MONITOR_TYPE.DOC_LEVEL:
           const { index, queries } = values;
           accordionTitle = 'Preview findings and performance';
-          return _.isEmpty(response) ? (
+          return _.isNull(response) ? (
             renderEmptyMessage(
               validDocLevelGraphQueries(queries) ? '' : 'You must define at least one query.'
             )
