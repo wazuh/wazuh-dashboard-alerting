@@ -7,6 +7,7 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 ### Added
 
 - Support for Wazuh 5.0.0
+- Added debounce to Document Level Query text inputs
 
 ### Changed
 
