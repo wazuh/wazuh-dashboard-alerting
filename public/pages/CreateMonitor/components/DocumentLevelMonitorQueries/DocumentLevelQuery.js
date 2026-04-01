@@ -24,6 +24,8 @@ import {
   required,
   requiredNumber,
   validateIllegalCharacters,
+  validateDate,
+  validateIp,
 } from '../../../../utils/validate';
 import ConfigureDocumentLevelQueryTags from './ConfigureDocumentLevelQueryTags';
 import { getIndexFields, getTypeForField } from '../MonitorExpressions/expressions/utils/dataTypes';
@@ -31,7 +33,19 @@ import { DATA_TYPES } from '../../../../utils/constants';
 import { getOperators } from '../MonitorExpressions/expressions/utils/whereHelpers';
 import { getDocLevelQueryOperators } from './utils/helpers';
 
-const ALLOWED_DATA_TYPES = ['number', 'text', 'keyword', 'boolean'];
+const ALLOWED_DATA_TYPES = ['number', 'text', 'keyword', 'boolean', 'date', 'ip']; // Wazuh: support date and ip types
+
+// Wazuh: get the appropriate validation function and placeholder text for the query value field based on the field's data type.
+const getQueryValueConfig = (fieldDataType) => {
+  switch (fieldDataType) {
+    case 'date':
+      return { validate: validateDate, placeholder: 'e.g. 2026-01-15 or now-1d' };
+    case 'ip':
+      return { validate: validateIp, placeholder: 'e.g. 192.168.1.1' };
+    default:
+      return { validate: required, placeholder: 'Enter the search term' };
+  }
+};
 
 // TODO DRAFT: implement validation
 export const ILLEGAL_QUERY_NAME_CHARACTERS = [' '];
@@ -94,6 +108,8 @@ class DocumentLevelQuery extends Component {
   render() {
     const { formFieldName = '', query, queryIndex, queriesArrayHelpers } = this.props;
     const { fieldDataType, indexFieldOptions, supportedOperators } = this.state;
+    const { validate: validateQueryValue, placeholder: queryValuePlaceholder } =
+      getQueryValueConfig(fieldDataType);
     return (
       <div style={{ padding: '0px 10px' }}>
         <EuiFlexGroup>
@@ -203,7 +219,7 @@ class DocumentLevelQuery extends Component {
               <FormikFieldText
                 name={`${formFieldName}.query`}
                 formRow
-                fieldProps={{ validate: required }}
+                fieldProps={{ validate: validateQueryValue }} // Wazuh: apply appropriate validation based on field data type
                 rowProps={{
                   hasEmptyLabelSpace: true,
                   style: { width: '300px' },
@@ -211,7 +227,7 @@ class DocumentLevelQuery extends Component {
                   error: hasError,
                 }}
                 inputProps={{
-                  placeholder: 'Enter the search term',
+                  placeholder: queryValuePlaceholder, // Wazuh: apply appropriate placeholder based on field data type
                   fullWidth: true,
                   isInvalid,
                   value: this.state.queryValue,
