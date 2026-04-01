@@ -78,7 +78,7 @@ const MonitorDefinitionCard = ({ values, plugins }) => {
             }}
           />
         </EuiFlexItem>
-        {/* // Wazuh: hide the extraction query editor option for doc level monitor */}
+        {/* Wazuh: hide the extraction query editor option for doc level monitor */}
         {values.monitor_type !== MONITOR_TYPE.DOC_LEVEL && (
           <EuiFlexItem grow={false} style={{ width: `${MONITOR_DEFINITION_CARD_WIDTH}px` }}>
             <FormikCheckableCard
