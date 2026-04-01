@@ -132,12 +132,15 @@ const Action = ({
 
   const renderChannels = () => {
     let placeHolderText = '';
+    let dropdownLabelText = '';
     let options = [];
     if (actionType === MANAGED_CHANNEL_CATEGORY.NOTIFICATION) {
       placeHolderText = 'Select channel to notify';
+      dropdownLabelText = 'Channel';
       options = destinations.filter(dest => !isManagedChannelType(dest.key)); 
     }else if (actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE) {
       placeHolderText = 'Select active response to execute';
+      dropdownLabelText = 'Active response';
       options = destinations.filter(dest => dest.key === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE);
     }
     return (
@@ -149,7 +152,7 @@ const Action = ({
               formRow
               fieldProps={{ validate: validateDestination(flattenedDestinations, flyoutMode) }}
               rowProps={{
-                label: 'Channels',
+                label: dropdownLabelText,
                 isInvalid,
                 error: hasError,
               }}
