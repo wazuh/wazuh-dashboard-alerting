@@ -53,10 +53,7 @@ const MonitorDetails = ({
 }) => {
   const anomalyDetectorContent =
     isAd && renderAnomalyDetector({ httpClient, values, detectorId, flyoutMode });
-  // Wazuh: hide monitor defining method options for doc level monitor
-  const displayMonitorDefinitionCards =
-    values.monitor_type !== MONITOR_TYPE.CLUSTER_METRICS &&
-    values.monitor_type !== MONITOR_TYPE.DOC_LEVEL;
+  const displayMonitorDefinitionCards = values.monitor_type !== MONITOR_TYPE.CLUSTER_METRICS;
   const Container = useMemo(
     () => (flyoutMode ? ({ children }) => <>{children}</> : ContentPanel),
     [flyoutMode]
