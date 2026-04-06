@@ -106,7 +106,7 @@ export const DEFAULT_DOCUMENT_LEVEL_QUERY = JSON.stringify(
     queries: [
       {
         name: 'QUERY_NAME',
-        query: '*',
+        query: '*', // Wazuh: use DQL instead
         tags: ['TAG_TEXT'],
       },
     ],
