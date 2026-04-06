@@ -176,6 +176,31 @@ export function isIndexPatternQueryValid(pattern, illegalCharacters) {
   return !illegalCharacters.some((char) => pattern.includes(char));
 }
 
+/**
+ * Wazuh: validate that a date string is in a valid format
+ * (ISO 8601, epoch ms, or OpenSearch date math) and can be parsed by OpenSearch.
+ */
+export const validateDate = (value) => {
+  if (!value) return 'Required.';
+  // OpenSearch date math: now, now-1d, now+1h/h, now/d, etc.
+  if (/^now([+-]\d+[smhdwMy])?(\/[smhdwMy])?$/.test(value)) return undefined;
+  // Epoch milliseconds or any date string parseable by the runtime (ISO 8601, RFC 2822, etc.)
+  if (!isNaN(Date.parse(value))) return undefined;
+  return 'Invalid date. Use ISO 8601 (2024-01-15T15:30:00), epoch ms, or date math (now-1d).';
+};
+
+/**
+ * Wazuh: validate that an IP address is in a valid format (IPv4 or IPv6) and can be parsed by OpenSearch.
+ */
+export const validateIp = (value) => {
+  if (!value) return 'Required.';
+  const ipv4 =
+    /^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)(\/(\d|[1-2]\d|3[0-2]))?$/;
+  const ipv6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}(\/\d{1,3})?$/;
+  if (ipv4.test(value) || ipv6.test(value)) return undefined;
+  return 'Invalid IP address. Use IPv4 (192.168.1.1) or IPv6 format.';
+};
+
 export function validateExtractionQuery(value) {
   try {
     JSON.parse(value);
