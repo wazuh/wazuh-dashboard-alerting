@@ -82,7 +82,7 @@ export const FORMIK_INITIAL_VALUES = {
 };
 
 if (dataSourceEnabled()) {
-  FORMIK_INITIAL_VALUES["dataSourceId"] = "random-dataSourceId";
+  FORMIK_INITIAL_VALUES['dataSourceId'] = 'random-dataSourceId';
 }
 
 export const FORMIK_INITIAL_AGG_VALUES = {
@@ -106,7 +106,7 @@ export const DEFAULT_DOCUMENT_LEVEL_QUERY = JSON.stringify(
     queries: [
       {
         name: 'QUERY_NAME',
-        query: { match_all: {} },
+        query: '*',
         tags: ['TAG_TEXT'],
       },
     ],
