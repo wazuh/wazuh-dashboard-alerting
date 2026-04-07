@@ -82,7 +82,7 @@ export const FORMIK_INITIAL_VALUES = {
 };
 
 if (dataSourceEnabled()) {
-  FORMIK_INITIAL_VALUES['dataSourceId'] = 'random-dataSourceId';
+  FORMIK_INITIAL_VALUES["dataSourceId"] = "random-dataSourceId";
 }
 
 export const FORMIK_INITIAL_AGG_VALUES = {
