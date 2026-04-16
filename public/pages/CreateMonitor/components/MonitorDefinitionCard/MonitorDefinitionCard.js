@@ -78,25 +78,22 @@ const MonitorDefinitionCard = ({ values, plugins }) => {
             }}
           />
         </EuiFlexItem>
-        {/* Wazuh: hide the extraction query editor option for doc level monitor */}
-        {values.monitor_type !== MONITOR_TYPE.DOC_LEVEL && (
-          <EuiFlexItem grow={false} style={{ width: `${MONITOR_DEFINITION_CARD_WIDTH}px` }}>
-            <FormikCheckableCard
-              name="searchTypeQuery"
-              formRow
-              inputProps={{
-                id: 'extractionQueryEditorRadioCard',
-                label: 'Extraction query editor',
-                checked: values.searchType === SEARCH_TYPE.QUERY,
-                value: SEARCH_TYPE.QUERY,
-                onChange: (e, field, form) => {
-                  onChangeDefinition(e, form, values);
-                },
-                'data-test-subj': 'extractionQueryEditorRadioCard',
-              }}
-            />
-          </EuiFlexItem>
-        )}
+        <EuiFlexItem grow={false} style={{ width: `${MONITOR_DEFINITION_CARD_WIDTH}px` }}>
+          <FormikCheckableCard
+            name="searchTypeQuery"
+            formRow
+            inputProps={{
+              id: 'extractionQueryEditorRadioCard',
+              label: 'Extraction query editor',
+              checked: values.searchType === SEARCH_TYPE.QUERY,
+              value: SEARCH_TYPE.QUERY,
+              onChange: (e, field, form) => {
+                onChangeDefinition(e, form, values);
+              },
+              'data-test-subj': 'extractionQueryEditorRadioCard',
+            }}
+          />
+        </EuiFlexItem>
         {/*// Only show the anomaly detector option when anomaly detection plugin is present, and for supporting monitors.*/}
         {hasADPlugin && supportsADOption && (
           <EuiFlexItem grow={false} style={{ width: `${MONITOR_DEFINITION_CARD_WIDTH}px` }}>
