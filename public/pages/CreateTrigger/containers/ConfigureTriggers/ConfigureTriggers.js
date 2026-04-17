@@ -379,6 +379,7 @@ class ConfigureTriggers extends React.Component {
       switch (monitorValues.monitor_type) {
         case MONITOR_TYPE.BUCKET_LEVEL:
           return this.renderDefineBucketLevelTrigger(arrayHelpers, index);
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Add Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           return this.renderDefineDocumentLevelTrigger(arrayHelpers, index);
         case MONITOR_TYPE.COMPOSITE_LEVEL:

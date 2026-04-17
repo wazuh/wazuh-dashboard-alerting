@@ -35,6 +35,8 @@ export function getItemLevelType(itemType) {
       return 'Per bucket';
     case MONITOR_TYPE.CLUSTER_METRICS:
       return 'Per cluster metrics';
+    case MONITOR_TYPE.ACTIVE_RESPONSE:
+      return 'Active Response';
     case MONITOR_TYPE.DOC_LEVEL:
       return 'Per document';
     case MONITOR_TYPE.COMPOSITE_LEVEL:

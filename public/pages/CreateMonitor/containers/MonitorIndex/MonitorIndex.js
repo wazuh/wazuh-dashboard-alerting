@@ -11,7 +11,7 @@ import { EuiHealth, EuiHighlight } from '@elastic/eui';
 import { FormikComboBox } from '../../../../components/FormControls';
 import { validateIndex, hasError, isInvalid } from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
-import { MONITOR_TYPE } from '../../../../utils/constants';
+import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
 import CrossClusterConfiguration from '../../components/CrossClusterConfigurations/containers';
 import {
   getDataSourceQueryObj,
@@ -65,14 +65,19 @@ class MonitorIndex extends React.Component {
     this.onFetch = this.onFetch.bind(this);
   }
 
+  getInitialSearchQuery() {
+    return this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE
+      ? ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN
+      : '';
+  }
+
   componentDidMount() {
-    // Simulate initial load.
-    this.onSearchChange('');
+    this.onSearchChange(this.getInitialSearchQuery());
   }
 
   componentDidUpdate(prevProps) {
     if (isDataSourceChanged(prevProps, this.props)) {
-      this.onSearchChange('');
+      this.onSearchChange(this.getInitialSearchQuery());
     }
   }
 
@@ -246,7 +251,7 @@ class MonitorIndex extends React.Component {
       exactMatchedAliases,
     } = this.state;
 
-    const { visibleOptions } = getMatchedOptions(
+    let { visibleOptions } = getMatchedOptions(
       allIndices, //all indices
       partialMatchedIndices,
       exactMatchedIndices,
@@ -256,9 +261,18 @@ class MonitorIndex extends React.Component {
       false //isIncludingSystemIndices
     );
 
+    // Wazuh: restrict index options to findings indices for Active Response monitors
+    if (this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE) {
+      const isFindingsIndex = (o) => o.label.startsWith('wazuh-findings');
+      visibleOptions = visibleOptions
+        .map((group) => ({ ...group, options: group.options.filter(isFindingsIndex) }))
+        .filter((group) => group.options.length > 0);
+    }
+
     let supportMultipleIndices = true;
     let supportsCrossClusterMonitoring = false;
     switch (this.props.monitorType) {
+      case MONITOR_TYPE.ACTIVE_RESPONSE:
       case MONITOR_TYPE.DOC_LEVEL:
         supportMultipleIndices = false;
         supportsCrossClusterMonitoring = false;

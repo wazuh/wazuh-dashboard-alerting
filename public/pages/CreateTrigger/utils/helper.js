@@ -62,6 +62,7 @@ export const getDefaultScript = (monitorValues) => {
     case MONITOR_TYPE.CLUSTER_METRICS:
       const apiType = _.get(monitorValues, 'uri.api_type');
       return _.get(API_TYPES, `${apiType}.defaultCondition`, DEFAULT_CLUSTER_METRICS_SCRIPT);
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Add Active Response monitor type
     case MONITOR_TYPE.DOC_LEVEL:
       return FORMIK_INITIAL_DOC_LEVEL_SCRIPT;
     default:
