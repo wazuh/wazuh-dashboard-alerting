@@ -37,61 +37,67 @@ export const WHERE_BOOLEAN_FILTERS = [
   { text: 'False', value: false },
 ];
 
+// Wazuh: field type groups used to declare which operators each type supports.
+const RANGE_COMPARABLE_TYPES = ['number', 'date']; // support :>, :>=, :<, :<= in query_string
+const EQUALITY_TYPES = ['number', 'text', 'keyword', 'boolean', 'date', 'ip'];
+const NULLABLE_TYPES = ['number', 'text', 'keyword', 'boolean', 'date', 'ip'];
+const TEXT_TYPES = ['text', 'keyword'];
+
 export const OPERATORS_MAP = {
   IS: {
     text: 'is',
     value: 'is',
-    dataTypes: ['number', 'text', 'keyword', 'boolean'],
+    dataTypes: EQUALITY_TYPES, // Wazuh: extend operator support
   },
   IS_NOT: {
     text: 'is not',
     value: 'is_not',
-    dataTypes: ['number', 'text', 'keyword', 'boolean'],
+    dataTypes: EQUALITY_TYPES, // Wazuh: extend operator support
   },
   IS_NULL: {
     text: 'is null',
     value: 'is_null',
-    dataTypes: ['number', 'text', 'keyword', 'boolean'],
+    dataTypes: NULLABLE_TYPES, // Wazuh: extend operator support
   },
   IS_NOT_NULL: {
     text: 'is not null',
     value: 'is_not_null',
-    dataTypes: ['number', 'text', 'keyword'],
+    dataTypes: NULLABLE_TYPES, // Wazuh: extend operator support
   },
   IS_GREATER: {
     text: 'is greater than',
     value: 'is_greater',
-    dataTypes: ['number'],
+    dataTypes: RANGE_COMPARABLE_TYPES, // Wazuh: extend operator support
   },
   IS_GREATER_EQUAL: {
     text: 'is greater than equal',
     value: 'is_greater_equal',
-    dataTypes: ['number'],
+    dataTypes: RANGE_COMPARABLE_TYPES, // Wazuh: extend operator support
   },
   IS_LESS: {
     text: 'is less than',
     value: 'is_less',
-    dataTypes: ['number'],
+    dataTypes: RANGE_COMPARABLE_TYPES, // Wazuh: extend operator support
   },
   IS_LESS_EQUAL: {
     text: 'is less than equal',
     value: 'is_less_equal',
-    dataTypes: ['number'],
+    dataTypes: RANGE_COMPARABLE_TYPES, // Wazuh: extend operator support
   },
   STARTS_WITH: {
     text: 'starts with',
     value: 'starts_with',
-    dataTypes: ['text', 'keyword'],
+    dataTypes: TEXT_TYPES, // Wazuh: extend operator support
   },
   ENDS_WITH: {
     text: 'ends with',
     value: 'ends_with',
-    dataTypes: ['text', 'keyword'],
+    dataTypes: TEXT_TYPES, // Wazuh: extend operator support
   },
   CONTAINS: {
     text: 'contains',
     value: 'contains',
-    dataTypes: ['text', 'keyword'],
+    dataTypes: TEXT_TYPES, // Wazuh: extend operator support
   },
   DOES_NOT_CONTAINS: {
     text: 'does not contain',
