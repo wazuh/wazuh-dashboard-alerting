@@ -58,7 +58,7 @@ export const DATA_TYPES = {
 };
 
 export const OS_AD_PLUGIN = 'opensearch-anomaly-detection';
-export const OS_NOTIFICATION_PLUGIN = 'opensearch-notifications';
+export const OS_NOTIFICATION_PLUGIN = 'wazuh-indexer-notifications'; // Wazuh
 export const OPENSEARCH_DASHBOARDS_AD_PLUGIN = 'anomaly-detection-dashboards';
 
 export const INPUTS_DETECTOR_ID = '0.search.query.query.bool.filter[1].term.detector_id.value';
@@ -81,6 +81,7 @@ export const BACKEND_CHANNEL_TYPE = Object.freeze({
   CUSTOM_WEBHOOK: 'webhook',
   SES: 'ses',
   SNS: 'sns',
+  ACTIVE_RESPONSE: 'active_response', // Wazuh
 });
 
 export const CHANNEL_TYPE = Object.freeze({
@@ -90,6 +91,7 @@ export const CHANNEL_TYPE = Object.freeze({
   [BACKEND_CHANNEL_TYPE.CUSTOM_WEBHOOK]: 'Custom webhook',
   [BACKEND_CHANNEL_TYPE.SES]: 'Amazon SES',
   [BACKEND_CHANNEL_TYPE.SNS]: 'Amazon SNS',
+  [BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE]: 'Active Response', // Wazuh
 });
 
 export const DEFAULT_PREVIEW_ERROR_MSG = 'There was a problem previewing the detector.';
@@ -146,3 +148,11 @@ export const SEVERITY_OPTIONS = [
     color: { background: paletteColors[0], text: 'white' },
   },
 ];
+
+// Wazuh
+export const MANAGED_CHANNEL_CATEGORY = Object.freeze({
+  NOTIFICATION: 'notification', // OSD notifications channels
+  ACTIVE_RESPONSE: BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE,
+});
+
+export const MANAGED_CHANNEL_TYPES = Object.freeze([BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE]);

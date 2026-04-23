@@ -6,22 +6,27 @@
 import React from 'react';
 import _ from 'lodash';
 import { EuiPanel, EuiText, EuiSpacer } from '@elastic/eui';
-import Action from '../../components/Action';
-import ActionEmptyPrompt from '../../components/ActionEmptyPrompt';
-import AddActionButton from '../../components/AddActionButton';
+// Wazuh
+import Action from '../../components/Action/EnhancedAction';
+import ActionEmptyPrompt from '../../components/ActionEmptyPrompt/EnhancedActionEmptyPrompt';
+import AddActionButton from '../../components/AddActionButton/EnhancedAddActionButton';
 import { getAllowList } from '../../../Destinations/utils/helpers';
 import {
   MAX_QUERY_RESULT_SIZE,
   MAX_CHANNELS_RESULT_SIZE,
   MONITOR_TYPE,
   OS_NOTIFICATION_PLUGIN,
+  BACKEND_CHANNEL_TYPE,
+  MANAGED_CHANNEL_CATEGORY,
 } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
 import { TRIGGER_TYPE } from '../CreateTrigger/utils/constants';
 import { formikToTrigger } from '../CreateTrigger/utils/formikToTrigger';
 import { getChannelOptions, toChannelType } from '../../utils/helper';
-import { getInitialActionValues } from '../../components/AddActionButton/utils';
+// Wazuh
+import { getInitialActionValues } from '../../components/AddActionButton/enhanced-utils';
 import { getDataSourceId } from '../../../utils/helpers';
+import { isManagedChannelType } from '../../../../services/utils/helper';
 
 const createActionContext = (context, action) => {
   let trigger = context.trigger;
@@ -127,7 +132,7 @@ class ConfigureActions extends React.Component {
       const getChannelsQuery = {
         from_index: index,
         max_items: MAX_CHANNELS_RESULT_SIZE,
-        config_type: configTypes,
+        config_type: configTypes.filter((type) => !isManagedChannelType(type)), // Wazuh: filter out managed channels since they will be retrieved by a different function/s
         sort_field: 'name',
         sort_order: 'asc',
       };
@@ -151,8 +156,38 @@ class ConfigureActions extends React.Component {
       }
     };
 
+    // Wazuh
+    let indexActiveResponse = 0;
+    const getActiveResponsesChannels = async () => {
+      const getChannelsQuery = {
+        from_index: indexActiveResponse,
+        max_items: MAX_CHANNELS_RESULT_SIZE,
+        config_type: BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE,
+        sort_field: 'name',
+        sort_order: 'asc',
+      };
+
+      const channelsResponse = await this.props.notificationService.getChannels(getChannelsQuery);
+
+      channels = channels.concat(
+        channelsResponse.items.map((channel) => ({
+          label: `[Active response] ${channel.name}`,
+          value: channel.config_id,
+          type: channel.config_type,
+          description: channel.description,
+        }))
+      );
+
+      if (channelsResponse.total && channels.length < channelsResponse.total) {
+        indexActiveResponse += MAX_CHANNELS_RESULT_SIZE;
+        await getActiveResponsesChannels();
+      }
+    };
+
     if (hasNotificationPlugin) {
       await getChannels();
+      // Wazuh
+      await getActiveResponsesChannels();
     }
 
     return channels;
@@ -196,18 +231,30 @@ class ConfigureActions extends React.Component {
         loadingDestinations: false,
       });
 
-      const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
-      const actions = _.get(values, `${fieldPath}actions`, []);
-      const initialActionValues = getInitialActionValues({ monitorType, flyoutMode, actions });
-
-      // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
-      if (
-        destinationsAndChannels.length > 0 &&
-        !_.get(values, `${fieldPath}actions`) &&
-        !actionDeleted
-      ) {
-        arrayHelpers.insert(0, initialActionValues);
-      }
+      /**
+       * Wazuh: For wazuh, we dont want to override customer's preferences by automatically adding an alerting action form if they dont have any.
+       *
+       *      const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
+       *      const actions = _.get(values, `${fieldPath}actions`, []);
+       *      // Wazuh
+       *      const initialActionValues = getInitialActionValues({
+       *        monitorType,
+       *        flyoutMode,
+       *        actions,
+       *        actionType: MANAGED_CHANNEL_CATEGORY.NOTIFICATION,
+       *      });
+       *
+       *      // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
+       *      if (
+       *        destinationsAndChannels.length > 0 &&
+       *        !_.get(values, `${fieldPath}actions`) &&
+       *        !actionDeleted
+       *      ) {
+       *        arrayHelpers.insert(0, initialActionValues);
+       *      }
+       *
+       * wazuh edit end
+       */
     } catch (err) {
       console.error(err);
       this.setState({

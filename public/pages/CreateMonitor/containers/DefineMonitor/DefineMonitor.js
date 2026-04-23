@@ -325,7 +325,7 @@ class DefineMonitor extends Component {
         case MONITOR_TYPE.DOC_LEVEL:
           const { index, queries } = values;
           accordionTitle = 'Preview findings and performance';
-          return _.isEmpty(response) ? (
+          return _.isNull(response) ? (
             renderEmptyMessage(
               validDocLevelGraphQueries(queries) ? '' : 'You must define at least one query.'
             )
@@ -378,9 +378,12 @@ class DefineMonitor extends Component {
     // Cancel execution criteria
     switch (monitor_type) {
       case MONITOR_TYPE.DOC_LEVEL:
-        const { queries } = values;
-        const canExecute = searchType === SEARCH_TYPE.GRAPH && validDocLevelGraphQueries(queries);
-        if (!canExecute) return;
+        // Wazuh: fix conditional to only run validation for doc level graph queries
+        if (searchType === SEARCH_TYPE.GRAPH) {
+          const { queries } = values;
+          if (!validDocLevelGraphQueries(queries)) return;
+        }
+        break;
     }
     this.setState({ loadingResponse: true });
 

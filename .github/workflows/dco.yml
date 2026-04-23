@@ -1,6 +1,7 @@
 name: Developer Certificate of Origin Check
 
-on: [pull_request]
+# Wazuh: Commented this job because it is not needed to run DCO check on pull requests  
+# on: [pull_request]
 
 jobs:
   check:
