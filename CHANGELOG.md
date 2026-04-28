@@ -5,6 +5,7 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 ## Wazuh dashboard v5.0.0 - OpenSearch Dashboards 3.6.0 - Revision 01
 
 ### Added
+- Test entry for automated merge test [5538]
 
 - Support for Wazuh 5.0.0
 - Added debounce to Document Level Query text inputs
