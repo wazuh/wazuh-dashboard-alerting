@@ -555,7 +555,9 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     const groupBy = _.get(monitor, MONITOR_GROUP_BY);
     const condition =
       searchType === SEARCH_TYPE.GRAPH &&
-      (monitorType === MONITOR_TYPE.BUCKET_LEVEL || monitorType === MONITOR_TYPE.DOC_LEVEL)
+      (monitorType === MONITOR_TYPE.BUCKET_LEVEL ||
+        monitorType === MONITOR_TYPE.DOC_LEVEL ||
+        monitorType === MONITOR_TYPE.ACTIVE_RESPONSE) // Wazuh: Handle Active Response monitor type
         ? this.getMultipleGraphConditions(trigger)
         : _.get(trigger, 'condition.script.source', DEFAULT_EMPTY_DATA);
 
