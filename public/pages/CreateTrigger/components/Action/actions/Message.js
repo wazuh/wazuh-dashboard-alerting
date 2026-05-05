@@ -155,6 +155,7 @@ export default function Message(
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_ALERT;
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_EXECUTION;
       break;
     default:
@@ -176,6 +177,7 @@ export default function Message(
       actionableAlertsSelections = _.get(values, actionableAlertsSelectionsPath);
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       displayActionableAlertsOptions = false;
       displayThrottlingSettings = false;
       actionableAlertsSelections = [];

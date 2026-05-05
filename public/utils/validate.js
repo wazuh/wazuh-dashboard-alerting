@@ -35,6 +35,7 @@ export const validateActionName = (monitor, trigger) => (value) => {
       actions = _.get(trigger, `${TRIGGER_TYPE.BUCKET_LEVEL}.actions`, []);
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       actions = _.get(trigger, `${TRIGGER_TYPE.DOC_LEVEL}.actions`, []);
       break;
   }

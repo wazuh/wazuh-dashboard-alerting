@@ -39,6 +39,7 @@ export const getDataSources = (monitor, localClusterName) => {
       if (_.isEmpty(dataSources)) dataSources = [localClusterName || DEFAULT_EMPTY_DATA];
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       dataSources = _.get(monitor, 'inputs.0.doc_level_input.indices', [DEFAULT_EMPTY_DATA]);
       break;
     default:

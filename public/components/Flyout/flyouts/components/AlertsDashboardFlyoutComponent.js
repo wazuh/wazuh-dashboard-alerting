@@ -300,6 +300,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       case MONITOR_TYPE.BUCKET_LEVEL:
         return TRIGGER_TYPE.BUCKET_LEVEL;
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: allow AR monitor type
         return TRIGGER_TYPE.DOC_LEVEL;
       case MONITOR_TYPE.COMPOSITE_LEVEL:
         return TRIGGER_TYPE.COMPOSITE_LEVEL;
@@ -336,6 +337,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
         case MONITOR_TYPE.QUERY_LEVEL:
         case MONITOR_TYPE.CLUSTER_METRICS:
         case MONITOR_TYPE.DOC_LEVEL:
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         case MONITOR_TYPE.COMPOSITE_LEVEL:
           return `${item.id}-${item.version}`;
         case MONITOR_TYPE.BUCKET_LEVEL:
@@ -354,6 +356,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
           columns.push(CLUSTER_METRICS_CROSS_CLUSTER_ALERT_TABLE_COLUMN);
           break;
         case MONITOR_TYPE.DOC_LEVEL:
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           columns = _.cloneDeep(queryColumns);
           columns.splice(
             0,
@@ -560,6 +563,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     switch (monitorType) {
       case MONITOR_TYPE.BUCKET_LEVEL:
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         displayMultipleConditions = true;
         break;
       default:
@@ -585,6 +589,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     let displayTableTabs;
     switch (monitorType) {
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         displayTableTabs = true;
         break;
       default:
