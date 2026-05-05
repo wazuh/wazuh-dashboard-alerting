@@ -53,15 +53,13 @@ const AddActionButton = ({
 
   return flyoutMode ? (
     <EuiPanel paddingSize="none">
-      {monitorType !== MONITOR_TYPE.ACTIVE_RESPONSE && (
-        <EuiSmallButtonEmpty
-          onClick={onClickNotification}
-          iconType="plusInCircle"
-          className="add-action-button__flyout-button"
-        >
-          {buttonNotificationText}
-        </EuiSmallButtonEmpty>
-      )}
+      <EuiSmallButtonEmpty
+        onClick={onClickNotification}
+        iconType="plusInCircle"
+        className="add-action-button__flyout-button"
+      >
+        {buttonNotificationText}
+      </EuiSmallButtonEmpty>
       {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
         <EuiSmallButtonEmpty
           onClick={onClickActiveResponse}
@@ -83,11 +81,9 @@ const AddActionButton = ({
           justifyContent: 'center',
         }}
       >
-        {monitorType !== MONITOR_TYPE.ACTIVE_RESPONSE && (
-          <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
-            {buttonNotificationText}
-          </EuiButton>
-        )}
+        <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
+          {buttonNotificationText}
+        </EuiButton>
         {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
           <EuiButton fill={false} size={'s'} onClick={onClickActiveResponse}>
             {buttonActiveResponseText}
