@@ -10,3 +10,8 @@
     min-height: 50px;
   }
 }
+
+// Wazuh: improve spacing of combo box options list
+.euiComboBoxOptionsList .euiComboBoxTitle {
+  padding-top: 14px;
+}

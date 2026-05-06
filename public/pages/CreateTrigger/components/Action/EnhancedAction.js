@@ -179,14 +179,21 @@ const Action = ({
                 singleSelection: { asPlainText: true },
                 isClearable: false,
                 renderOption: (option) => (
-                  <React.Fragment>
-                    <EuiText size="s">{option.label}</EuiText>
-                    <EuiText size="xs" color="subdued">
-                      {option.description}
+                  <div style={{ lineHeight: '1' }}>
+                    <EuiText size="s">
+                      {option.label}
                     </EuiText>
-                  </React.Fragment>
+                    {option.description && (
+                      <EuiText
+                        size="xs"
+                        color="subdued"
+                      >
+                        {option.description}
+                      </EuiText>
+                    )}
+                  </div>
                 ),
-                rowHeight: 30,
+                rowHeight: 46,
                 isLoading: !flyoutMode && loadingDestinations,
               }}
             />
