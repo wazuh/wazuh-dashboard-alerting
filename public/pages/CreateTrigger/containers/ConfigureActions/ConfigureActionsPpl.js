@@ -243,6 +243,7 @@ class ConfigureActionsPpl extends React.Component {
         _.set(testTrigger, `${TRIGGER_TYPE.BUCKET_LEVEL}.condition`, condition);
         break;
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         action = _.get(testTrigger, `${TRIGGER_TYPE.DOC_LEVEL}.actions[${index}]`);
         condition = {
           ..._.get(testTrigger, `${TRIGGER_TYPE.DOC_LEVEL}.condition`),

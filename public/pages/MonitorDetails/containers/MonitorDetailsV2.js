@@ -662,7 +662,7 @@ export default class MonitorDetailsV2 extends Component {
       );
     }
 
-    const displayTableTabs = [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(
+    const displayTableTabs = [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(
       displayMonitor.monitor_type
     );
 

@@ -246,6 +246,7 @@ export default class MonitorDetailsV1 extends Component {
     let query = { ifSeqNo, ifPrimaryTerm };
     switch (monitor.monitor_type) {
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         query = {};
         break;
     }
@@ -473,7 +474,7 @@ export default class MonitorDetailsV1 extends Component {
       );
     }
 
-    const displayTableTabs = [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(
+    const displayTableTabs = [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(
       monitor.monitor_type
     );
 

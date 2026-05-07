@@ -152,7 +152,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
 
     const { monitorType, commentsEnabled, tabId } = this.state;
     if (
-      ([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(monitorType) &&
+      ([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) &&
         !_.isEqual(prevState.selectedItems, this.state.selectedItems)) ||
       (tabId === TABLE_TAB_IDS.ALERTS.id && commentsEnabled !== prevState.commentsEnabled)
     )
@@ -663,7 +663,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
               </p>
             </EuiText>
           </EuiFlexItem>
-          {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(monitorType) && (
+          {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) && (
             <EuiFlexItem>
               <EuiText size="s" data-test-subj={`alertsDashboardFlyout_timeRange_${trigger_name}`}>
                 <strong>Time range for the last</strong>
@@ -672,7 +672,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
             </EuiFlexItem>
           )}
         </EuiFlexGroup>
-        {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(monitorType) && (
+        {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) && (
           <div>
             <EuiSpacer size={'xxl'} />
             <EuiFlexGroup>
