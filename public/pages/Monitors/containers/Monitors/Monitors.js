@@ -526,9 +526,8 @@ export default class Monitors extends Component {
 
     return (
       <>
-        {/* Wazuh: commented out actions property from ContentPanel since it duplicates monitorActions when useUpdatedUx is false */}
         <ContentPanel
-          // actions={useUpdatedUx ? undefined : monitorActions}
+          actions={useUpdatedUx ? undefined : monitorActions}
           bodyStyles={{ padding: 'initial' }}
           title={useUpdatedUx ? undefined : 'Monitors'}
           panelOptions={{ hideTitleBorder: useUpdatedUx }}
@@ -559,7 +558,7 @@ export default class Monitors extends Component {
             onSearchChange={this.onSearchChange}
             onStateChange={this.onMonitorStateChange}
             onPageClick={this.onPageClick}
-            monitorActions={useUpdatedUx ? null : monitorActions}
+            monitorActions={useUpdatedUx ? monitorActions : null}
           />
 
           {showAcknowledgeModal && (
