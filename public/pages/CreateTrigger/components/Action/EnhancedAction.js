@@ -178,6 +178,7 @@ const Action = ({
                 onFocus: refreshDestinations,
                 singleSelection: { asPlainText: true },
                 isClearable: false,
+                'data-test-subj': 'channelComboBox',
                 renderOption: (option) => (
                   <div style={{ lineHeight: '1' }}>
                     <EuiText size="s">
