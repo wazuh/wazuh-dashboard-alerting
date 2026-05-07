@@ -18,4 +18,3 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 ### Fixed
 
 - Fixed request execution in Extraction Query Editor [#24](https://github.com/wazuh/wazuh-dashboard-alerting/pull/24)
-- Fixed duplicated action buttons in monitors tab [#73](https://github.com/wazuh/wazuh-dashboard-alerting/pull/73)
