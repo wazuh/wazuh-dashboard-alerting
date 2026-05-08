@@ -18,6 +18,7 @@ export const buildRequest = (values, uiGraphQuery = true) =>
 
 function buildQuerySearchRequest(values) {
   switch (values.monitor_type) {
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
     case MONITOR_TYPE.DOC_LEVEL:
       return formikToDocLevelInput(values);
     default:
@@ -29,6 +30,7 @@ function buildQuerySearchRequest(values) {
 
 function buildGraphSearchRequest(values, uiGraphQuery) {
   switch (values.monitor_type) {
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
     case MONITOR_TYPE.DOC_LEVEL:
       return formikToDocLevelInput(values);
     default:

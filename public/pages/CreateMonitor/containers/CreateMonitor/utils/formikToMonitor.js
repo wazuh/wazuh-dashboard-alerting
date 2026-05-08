@@ -28,6 +28,7 @@ export function formikToMonitor(values) {
 
   const monitorUiMetadata = () => {
     switch (values.monitor_type) {
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: same doc-level inputs structure
       case MONITOR_TYPE.DOC_LEVEL:
         return {
           [DOC_LEVEL_INPUT_FIELD]: formikToDocLevelQueriesUiMetadata(values),
@@ -86,6 +87,7 @@ export function formikToInputs(values) {
   switch (values.monitor_type) {
     case MONITOR_TYPE.CLUSTER_METRICS:
       return formikToClusterMetricsInput(values);
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: same doc-level inputs structure
     case MONITOR_TYPE.DOC_LEVEL:
       return formikToDocLevelInput(values);
     case MONITOR_TYPE.COMPOSITE_LEVEL:

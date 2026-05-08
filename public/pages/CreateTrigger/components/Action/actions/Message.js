@@ -141,7 +141,9 @@ export default function Message(
   const onDisplayPreviewChange = (e) => setDisplayPreview(e.target.checked);
   const monitorType = _.get(context, 'ctx.monitor.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const editableActionExecutionPolicy =
-    monitorType === MONITOR_TYPE.BUCKET_LEVEL || monitorType === MONITOR_TYPE.DOC_LEVEL;
+    monitorType === MONITOR_TYPE.BUCKET_LEVEL ||
+    monitorType === MONITOR_TYPE.DOC_LEVEL ||
+    monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
 
   const actionPath = `${fieldPath}actions.${index}`;
   const actionExecutionPolicyPath = editableActionExecutionPolicy
@@ -155,6 +157,7 @@ export default function Message(
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_ALERT;
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_EXECUTION;
       break;
     default:
@@ -176,6 +179,7 @@ export default function Message(
       actionableAlertsSelections = _.get(values, actionableAlertsSelectionsPath);
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       displayActionableAlertsOptions = false;
       displayThrottlingSettings = false;
       actionableAlertsSelections = [];

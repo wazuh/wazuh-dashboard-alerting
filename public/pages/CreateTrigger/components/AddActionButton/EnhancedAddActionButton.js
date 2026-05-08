@@ -60,7 +60,7 @@ const AddActionButton = ({
       >
         {buttonNotificationText}
       </EuiSmallButtonEmpty>
-      {monitorType === MONITOR_TYPE.DOC_LEVEL && (
+      {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
         <EuiSmallButtonEmpty
           onClick={onClickActiveResponse}
           iconType="plusInCircle"
@@ -84,7 +84,7 @@ const AddActionButton = ({
         <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
           {buttonNotificationText}
         </EuiButton>
-        {monitorType === MONITOR_TYPE.DOC_LEVEL && (
+        {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
           <EuiButton fill={false} size={'s'} onClick={onClickActiveResponse}>
             {buttonActiveResponseText}
           </EuiButton>

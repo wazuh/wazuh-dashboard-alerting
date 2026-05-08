@@ -28,23 +28,11 @@ const ActionEmptyPrompt = ({
       style={{ maxWidth: '45em' }}
       body={
         <EuiText size="s">
-          <p>{hasDestinations ? actionEmptyText : destinationEmptyText}</p>
+          <p>{actionEmptyText}</p>
         </EuiText>
       }
       actions={
-        hasDestinations ? (
           <AddActionButton {...{ arrayHelpers, flyoutMode, onPostAdd, numActions }} />
-        ) : (
-          <EuiSmallButton
-            fill
-            disabled={!hasNotificationPlugin}
-            iconType="popout"
-            iconSide="right"
-            onClick={() => window.open(getManageChannelsUrl())}
-          >
-            Manage channels
-          </EuiSmallButton>
-        )
       }
     />
   );
