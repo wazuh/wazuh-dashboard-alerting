@@ -34,6 +34,7 @@ export function formikToTriggerDefinition(values, monitorUiMetadata) {
     case MONITOR_TYPE.BUCKET_LEVEL:
       return formikToBucketLevelTrigger(values, monitorUiMetadata);
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       return formikToDocumentLevelTrigger(values, monitorUiMetadata);
     case MONITOR_TYPE.COMPOSITE_LEVEL:
       return formikToCompositeLevelTrigger(values, monitorUiMetadata);
@@ -284,6 +285,7 @@ export function formikToTriggerUiMetadata(values, monitorUiMetadata) {
       return bucketLevelTriggersUiMetadata;
 
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       const docLevelTriggersUiMetadata = {};
       _.get(values, 'triggerDefinitions', []).forEach((trigger) => {
         const triggerMetadata = _.get(trigger, 'triggerConditions', []).map((condition) => ({

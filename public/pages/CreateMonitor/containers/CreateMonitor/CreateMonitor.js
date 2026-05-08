@@ -70,6 +70,7 @@ export default class CreateMonitor extends Component {
     this.onCancel = this.onCancel.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     this.evaluateSubmission = this.evaluateSubmission.bind(this);
+    this.validateForm = this.validateForm.bind(this);
   }
 
   componentDidMount() {
@@ -110,6 +111,24 @@ export default class CreateMonitor extends Component {
       }
     }
   };
+
+  // Wazuh: Validate that Active Response monitors have at least one trigger with an AR action
+  validateForm(values) {
+    const errors = {};
+    if (values.monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE) {
+      const triggerDefinitions = _.get(values, 'triggerDefinitions', []);
+      const hasActiveResponseAction = triggerDefinitions.some((trigger) =>
+        _.get(trigger, 'actions', []).some((action) =>
+          _.get(action, 'id', '').startsWith('activeResponse')
+        )
+      );
+      if (!hasActiveResponseAction) {
+        errors.noActiveResponseAction =
+          'There must be at least one trigger with an Active Response action configured.';
+      }
+    }
+    return errors;
+  }
 
   evaluateSubmission(values, formikBag) {
     const { performanceResponse } = this.props;
@@ -248,10 +267,11 @@ export default class CreateMonitor extends Component {
         <Formik
           initialValues={initialValues}
           onSubmit={this.evaluateSubmission}
+          validate={this.validateForm}
           validateOnChange={false}
           enableReinitialize={true}
         >
-          {({ values, errors, handleSubmit, isSubmitting, isValid, touched, setFieldValue }) => {
+          {({ values, errors, handleSubmit, isSubmitting, isValid, touched, setFieldValue, submitCount }) => {
             const isComposite = values.monitor_type === MONITOR_TYPE.COMPOSITE_LEVEL;
             const isPpl = values.monitor_type === MONITOR_TYPE.PPL;
 
@@ -350,6 +370,8 @@ export default class CreateMonitor extends Component {
                         {(triggerArrayHelpers) => (
                           <ConfigureTriggers
                             edit={edit}
+                            errors={errors}
+                            submitCount={submitCount}
                             triggerArrayHelpers={triggerArrayHelpers}
                             monitor={formikToMonitor(values)}
                             monitorValues={values}

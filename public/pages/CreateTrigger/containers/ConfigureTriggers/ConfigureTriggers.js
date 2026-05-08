@@ -5,6 +5,7 @@
 
 import React from 'react';
 import {
+  EuiCallOut,
   EuiHorizontalRule,
   EuiSpacer,
   EuiBadge,
@@ -365,6 +366,7 @@ class ConfigureTriggers extends React.Component {
       switch (monitorValues.monitor_type) {
         case MONITOR_TYPE.BUCKET_LEVEL:
           return this.renderDefineBucketLevelTrigger(arrayHelpers, index);
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Add Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           return this.renderDefineDocumentLevelTrigger(arrayHelpers, index);
         case MONITOR_TYPE.COMPOSITE_LEVEL:
@@ -422,7 +424,7 @@ class ConfigureTriggers extends React.Component {
   };
 
   render() {
-    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues } = this.props;
+    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues, errors, submitCount } = this.props;
     const { ContentPanelStructure } = this.state;
     const monitorType = monitorValues.monitor_type;
     const isComposite = monitorType === MONITOR_TYPE.COMPOSITE_LEVEL;
@@ -435,6 +437,7 @@ class ConfigureTriggers extends React.Component {
     const numOfTriggers = _.get(triggerValues, 'triggerDefinitions', []).length;
     const displayAddTriggerButton = numOfTriggers > 0;
     const disableAddTriggerButton = numOfTriggers >= maxTriggers;
+    const activeResponseActionError = submitCount > 0 && errors?.noActiveResponseAction;
 
     return (
       <ContentPanelStructure
@@ -449,6 +452,17 @@ class ConfigureTriggers extends React.Component {
         bodyStyles={{ paddingLeft: '0px', padding: '10px' }}
         horizontalRuleClassName={'accordion-horizontal-rule'}
       >
+        {activeResponseActionError && (
+          <div id="noActiveResponseAction" tabIndex={-1} style={{ outline: 'none' }}>
+            <EuiCallOut
+              title={activeResponseActionError}
+              color="danger"
+              iconType="alert"
+              size="s"
+            />
+            <EuiSpacer size="s" />
+          </div>
+        )}
         {this.renderTriggers(triggerArrayHelpers)}
         {flyoutMode && !disableAddTriggerButton && (
           <AddTriggerButton

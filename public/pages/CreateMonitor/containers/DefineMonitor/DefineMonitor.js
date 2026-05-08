@@ -241,6 +241,7 @@ class DefineMonitor extends Component {
         return true;
       case MONITOR_TYPE.CLUSTER_METRICS:
         return false;
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       case MONITOR_TYPE.DOC_LEVEL:
         return false;
       default:
@@ -295,6 +296,7 @@ class DefineMonitor extends Component {
     const aggregations = _.get(values, 'aggregations');
     const monitorExpressions = () => {
       switch (values.monitor_type) {
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           return <ConfigureDocumentLevelQueries errors={errors} dataTypes={dataTypes} />;
         default:
@@ -309,6 +311,7 @@ class DefineMonitor extends Component {
       switch (values.monitor_type) {
         case MONITOR_TYPE.BUCKET_LEVEL:
           return this.getBucketMonitorGraphs(aggregations, formikSnapshot, response);
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           const { index, queries } = values;
           accordionTitle = 'Preview findings and performance';
@@ -364,6 +367,7 @@ class DefineMonitor extends Component {
 
     // Cancel execution criteria
     switch (monitor_type) {
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       case MONITOR_TYPE.DOC_LEVEL:
         // Wazuh: fix conditional to only run validation for doc level graph queries
         if (searchType === SEARCH_TYPE.GRAPH) {
@@ -454,7 +458,7 @@ class DefineMonitor extends Component {
 
         // TODO FIXME: Doc level backend monitor run results don't include duration metrics. Using this for now.
         //  This returns a much longer duration than other monitors, though.
-        if (monitor_type === MONITOR_TYPE.DOC_LEVEL) {
+        if (monitor_type === MONITOR_TYPE.DOC_LEVEL || monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE) { // Wazuh: Handle Active Response monitor type
           let hitsCount = 0;
           _.keys(response).forEach(
             (resultKey) => (hitsCount += _.values(performanceResponse[resultKey]).length)
@@ -537,7 +541,9 @@ class DefineMonitor extends Component {
     const { values, flyoutMode } = this.props;
     const { index, timeField } = values;
     let content;
-    const supportsTimeField = values.monitor_type !== MONITOR_TYPE.DOC_LEVEL;
+    const supportsTimeField =
+      values.monitor_type !== MONITOR_TYPE.DOC_LEVEL &&
+      values.monitor_type !== MONITOR_TYPE.ACTIVE_RESPONSE; // Wazuh: Handle Active Response monitor type
     if (index.length) {
       content =
         _.isEmpty(timeField) && supportsTimeField

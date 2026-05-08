@@ -50,6 +50,8 @@ function getMonitorLevelType(monitorType) {
       return 'Per bucket monitor';
     case MONITOR_TYPE.CLUSTER_METRICS:
       return 'Per cluster metrics monitor';
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Add Active Response monitor type
+      return 'Active Response monitor';
     case MONITOR_TYPE.DOC_LEVEL:
       return 'Per document monitor';
     case MONITOR_TYPE.COMPOSITE_LEVEL:

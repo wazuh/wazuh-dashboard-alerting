@@ -283,6 +283,60 @@ Array [
         </div>
       </div>
     </div>
+    <div
+      class="euiFlexItem euiFlexItem--flexGrowZero"
+      style="width:350px"
+    >
+      <div
+        class="euiPanel euiPanel--borderRadiusMedium euiPanel--plain euiPanel--hasShadow euiPanel--hasBorder euiPanel--flexGrowZero euiSplitPanel euiSplitPanel--row euiCheckableCard eui-fullHeight"
+      >
+        <div
+          class="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--subdued euiPanel--noShadow euiPanel--noBorder euiPanel--flexGrowZero euiPanel--isClickable euiSplitPanel__inner"
+        >
+          <div
+            class="euiRadio euiRadio--noLabel"
+            data-test-subj="activeResponseMonitorRadioCard"
+          >
+            <input
+              class="euiRadio__input"
+              id="activeResponseMonitorRadioCard"
+              name="monitorTypeActiveResponse"
+              type="radio"
+              value="active_response_monitor"
+            />
+            <div
+              class="euiRadio__circle"
+            />
+          </div>
+        </div>
+        <div
+          class="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--transparent euiPanel--noShadow euiPanel--noBorder euiSplitPanel__inner"
+        >
+          <label
+            aria-describedby="activeResponseMonitorRadioCard-details"
+            class="euiCheckableCard__label"
+            for="activeResponseMonitorRadioCard"
+          >
+            Active Response
+          </label>
+          <div
+            class="euiCheckableCard__children"
+            id="activeResponseMonitorRadioCard-details"
+          >
+            <div
+              class="euiText euiText--extraSmall"
+              style="padding-bottom:10px;padding-top:0px"
+            >
+              <div
+                class="euiTextColor euiTextColor--subdued"
+              >
+                Active Response monitors trigger active responses when documents match the trigger conditions.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>,
 ]
 `;

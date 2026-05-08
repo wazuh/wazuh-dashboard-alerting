@@ -10,3 +10,9 @@
     min-height: 50px;
   }
 }
+
+// Wazuh: improve spacing of channel combo box group titles
+// option list are virtually rendered in a portal, so we need to target them this way
+[data-test-subj~='channelComboBox-optionsList'] .euiComboBoxTitle {
+  padding-top: 14px;
+}
