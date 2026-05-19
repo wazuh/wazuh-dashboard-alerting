@@ -36,20 +36,7 @@ exports[`Monitors renders 1`] = `
   >
     <MonitorControls
       activePage={0}
-      monitorActions={
-        <MonitorActions
-          hasMonitors={false}
-          isDeleteDisabled={true}
-          isDisableDisabled={true}
-          isEditDisabled={true}
-          isEnableDisabled={true}
-          onBulkAcknowledge={[Function]}
-          onBulkDelete={[Function]}
-          onBulkDisable={[Function]}
-          onBulkEnable={[Function]}
-          onClickEdit={[Function]}
-        />
-      }
+      monitorActions={null}
       onPageClick={[Function]}
       onSearchChange={[Function]}
       onStateChange={[Function]}
