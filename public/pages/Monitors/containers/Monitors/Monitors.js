@@ -28,6 +28,7 @@ import {
 import { getUseUpdatedUx } from '../../../../services';
 
 const MAX_MONITOR_COUNT = 1000;
+export const EXCLUDED_OWNER = 'security_analytics'; // Wazuh: exclude monitors owned by security_analytics
 
 // TODO: Abstract out a Table component to be used in both Dashboard and Monitors
 
@@ -163,7 +164,7 @@ export default class Monitors extends Component {
     this.setState({ loadingMonitors: true });
     try {
       const dataSourceId = getDataSourceId();
-      const params = { from, size, search, sortField, sortDirection, state, dataSourceId };
+      const params = { from, size, search, sortField, sortDirection, state, dataSourceId, excludeOwner: EXCLUDED_OWNER };
       const queryParamsString = queryString.stringify(params);
       const { httpClient, history } = this.props;
       history.replace({ ...this.props.location, search: queryParamsString });
