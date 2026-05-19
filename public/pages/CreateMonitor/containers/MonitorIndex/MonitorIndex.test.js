@@ -96,7 +96,7 @@ describe('MonitorIndex', () => {
     const wrapper = getMountWrapper();
 
     expect(await wrapper.find(MonitorIndex).instance().handleQueryAliases('*:')).toEqual([]);
-    expect(await wrapper.find(MonitorIndex).instance().handleQueryIndices('*:')).toEqual([]);
+    expect((await wrapper.find(MonitorIndex).instance().handleQueryIndices('*:')).indices).toEqual([]);
   });
 
   test('returns empty array for data.ok = false', async () => {
@@ -104,7 +104,7 @@ describe('MonitorIndex', () => {
     const wrapper = getMountWrapper();
 
     expect(await wrapper.find(MonitorIndex).instance().handleQueryAliases('random')).toEqual([]);
-    expect(await wrapper.find(MonitorIndex).instance().handleQueryIndices('random')).toEqual([]);
+    expect((await wrapper.find(MonitorIndex).instance().handleQueryIndices('random')).indices).toEqual([]);
   });
   //
   test('returns indices/aliases', async () => {
@@ -117,7 +117,7 @@ describe('MonitorIndex', () => {
     expect(await wrapper.find(MonitorIndex).instance().handleQueryAliases('l')).toEqual([
       { label: 'logstash', index: 'logstash-0' },
     ]);
-    expect(await wrapper.find(MonitorIndex).instance().handleQueryIndices('l')).toEqual([
+    expect((await wrapper.find(MonitorIndex).instance().handleQueryIndices('l')).indices).toEqual([
       { health: 'green', status: 'open', label: 'logstash-0' },
     ]);
   });

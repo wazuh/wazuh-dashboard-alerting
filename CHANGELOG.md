@@ -15,6 +15,7 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 - Changed category in the side menu to `Explore` [#4](https://github.com/wazuh/wazuh-dashboard-alerting/pull/4)
 - Support `date` and `ip` type fields in document level queries [#22](https://github.com/wazuh/wazuh-dashboard-alerting/pull/22)
 - Hide "Add active response" button for all monitor types except "Per document monitor" / Do not auto-load notification form when adding a trigger. [#18](https://github.com/wazuh/wazuh-dashboard-alerting/pull/18)
+- Hide `security_analytics` owned monitors in table [#85](https://github.com/wazuh/wazuh-dashboard-alerting/pull/85)
 
 ### Fixed
 
