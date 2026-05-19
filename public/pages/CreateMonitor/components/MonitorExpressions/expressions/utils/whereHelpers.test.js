@@ -140,6 +140,10 @@ describe('whereHelpers', () => {
           text: 'is null',
           value: 'is_null',
         },
+        {
+          text: 'is not null',
+          value: 'is_not_null',
+        }
       ]);
     });
   });
