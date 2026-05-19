@@ -343,6 +343,13 @@ export default class MonitorService extends MDSEnabledClientService {
               should,
               minimum_should_match: state !== 'all' ? 1 : 0,
               must: mustList,
+              // Wazuh: optionally exclude monitors by owner
+              ...(excludeOwner && {
+                must_not: [
+                  { term: { 'monitor.owner': excludeOwner } },
+                  { term: { 'workflow.owner': excludeOwner } },
+                ],
+              }),
             },
           },
           aggregations: {
