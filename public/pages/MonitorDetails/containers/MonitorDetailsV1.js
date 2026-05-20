@@ -403,9 +403,12 @@ export default class MonitorDetailsV1 extends Component {
     const { tabId, monitor } = this.state;
     const tabs = [{ ...TABLE_TAB_IDS.ALERTS, content: this.renderAlertsTable() }];
 
-    if (monitor.monitor_type !== MONITOR_TYPE.COMPOSITE_LEVEL) {
-      tabs.push({ ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() });
-    }
+    // Wazuh: deprecated `Document findings` tab
+    // if (monitor.monitor_type !== MONITOR_TYPE.COMPOSITE_LEVEL) {
+    //   tabs.push({ ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() });
+    // }
+
+    if (tabs.length < 2) return null; // Wazuh: hide tabs when there are less than 2
 
     return tabs.map((tab, index) => (
       <EuiTab
@@ -583,7 +586,7 @@ export default class MonitorDetailsV1 extends Component {
         {displayTableTabs ? (
           <div>
             {monitor.monitor_type !== MONITOR_TYPE.COMPOSITE_LEVEL ? (
-              <EuiTabs size="s">{this.renderTableTabs()}</EuiTabs>
+               <EuiTabs size="s">{this.renderTableTabs()}</EuiTabs>
             ) : null}
             {this.state.tabContent}
           </div>

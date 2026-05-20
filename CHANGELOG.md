@@ -17,6 +17,7 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 - Hide "Add active response" button for all monitor types except "Per document monitor" / Do not auto-load notification form when adding a trigger. [#18](https://github.com/wazuh/wazuh-dashboard-alerting/pull/18)
 - Hide `security_analytics` owned monitors in table [#85](https://github.com/wazuh/wazuh-dashboard-alerting/pull/85)
 - Hide `Destinations` tab [#88](https://github.com/wazuh/wazuh-dashboard-alerting/pull/88)
+- Hide `Document findings` tab in Active Response and Per document monitor details [#89](https://github.com/wazuh/wazuh-dashboard-alerting/pull/89)
 
 ### Fixed
 
