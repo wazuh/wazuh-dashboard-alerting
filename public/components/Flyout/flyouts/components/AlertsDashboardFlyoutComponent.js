@@ -514,7 +514,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     const { tabId } = this.state;
     const tabs = [
       { ...TABLE_TAB_IDS.ALERTS, content: this.renderAlertsTable() },
-      // Wazuh: Wazuh: deprecated `Document findings` tab
+      // Wazuh: deprecated `Document findings` tab
       // { ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() },
     ];
 
