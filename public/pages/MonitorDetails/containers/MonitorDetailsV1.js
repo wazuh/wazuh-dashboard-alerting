@@ -408,6 +408,8 @@ export default class MonitorDetailsV1 extends Component {
     //   tabs.push({ ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() });
     // }
 
+    if (tabs.length < 2) return null; // Wazuh: hide tabs when there are less than 2
+
     return tabs.map((tab, index) => (
       <EuiTab
         key={`${tab.id}${index}`}
@@ -584,7 +586,7 @@ export default class MonitorDetailsV1 extends Component {
         {displayTableTabs ? (
           <div>
             {monitor.monitor_type !== MONITOR_TYPE.COMPOSITE_LEVEL ? (
-              <EuiTabs size="s">{this.renderTableTabs()}</EuiTabs>
+               <EuiTabs size="s">{this.renderTableTabs()}</EuiTabs>
             ) : null}
             {this.state.tabContent}
           </div>

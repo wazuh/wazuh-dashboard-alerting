@@ -517,6 +517,9 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       // Wazuh: Wazuh: deprecated `Document findings` tab
       // { ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() },
     ];
+
+    if (tabs.length < 2) return null; // Wazuh: hide tabs when there are less than 2
+
     return tabs.map((tab, index) => (
       <EuiTab
         key={`${tab.id}${index}`}
