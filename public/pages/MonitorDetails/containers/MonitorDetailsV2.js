@@ -590,9 +590,10 @@ export default class MonitorDetailsV2 extends Component {
     const { tabId, monitor } = this.state;
     const tabs = [{ ...TABLE_TAB_IDS.ALERTS, content: this.renderAlertsTable() }];
 
-    if (monitor.monitor_type !== MONITOR_TYPE.COMPOSITE_LEVEL) {
-      tabs.push({ ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() });
-    }
+    // Wazuh: deprecated `Document findings` tab
+    // if (monitor.monitor_type !== MONITOR_TYPE.COMPOSITE_LEVEL) {
+    //   tabs.push({ ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() });
+    // }
 
     return tabs.map((tab, index) => (
       <EuiTab
