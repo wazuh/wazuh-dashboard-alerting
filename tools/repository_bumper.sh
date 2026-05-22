@@ -510,7 +510,6 @@ main() {
   update_package_json
   update_changelog
   update_branch_reference_defaults
-  update_manual_build_workflow
 
   log "File modifications completed."
   log "Repository bump completed successfully. Log file: $LOG_FILE"
