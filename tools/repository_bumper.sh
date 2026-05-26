@@ -8,7 +8,6 @@ REPO_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
 DATE_TIME=$(date "+%Y-%m-%d_%H-%M-%S-%3N")
 LOG_FILE="${SCRIPT_PATH}/repository_bumper_${DATE_TIME}.log"
 PACKAGE_JSON="${REPO_PATH}/package.json"
-WAZUH_DASHBOARD_ALERTING_WORKFLOW_FILE="${REPO_PATH}/.github/workflows/5_builderpackage_alerting_plugin.yml"
 VERSION_FILE="${REPO_PATH}/VERSION.json"
 VERSION=""
 REVISION="00"
@@ -437,27 +436,6 @@ update_package_json() {
   fi
 }
 
-update_manual_build_workflow() {
-  local WORKFLOW_FILE="$WAZUH_DASHBOARD_ALERTING_WORKFLOW_FILE"
-  if [ -f "$WORKFLOW_FILE" ]; then
-    log "Processing $WORKFLOW_FILE"
-    local modified=false
-    # Update the default value for the reference input
-    if [[ "$CURRENT_VERSION" != "$VERSION" ]]; then
-      log "Attempting to update default reference to $VERSION in $WORKFLOW_FILE"
-      sed_inplace "s/^\([[:space:]]*default:[[:space:]]*\)$CURRENT_VERSION/\1$VERSION/" "$WORKFLOW_FILE"
-      modified=true
-    fi
-
-    if [[ $modified == true ]]; then
-      log "Successfully updated $WORKFLOW_FILE with new default reference: $VERSION"
-    fi
-  else
-    log "WARNING: $WORKFLOW_FILE not found. Skipping update."
-  fi
-  log "Updating $WAZUH_DASHBOARD_ALERTING_WORKFLOW_FILE workflow..."
-}
-
 # Replace "main" in default: reference inputs (5_* workflows only) when not in --set_as_main mode.
 update_branch_reference_defaults() {
   if [[ "$skip_urls" == "yes" ]]; then
@@ -465,7 +443,7 @@ update_branch_reference_defaults() {
     return 0
   fi
 
-  local bump_string="$VERSION"
+  local bump_string="$GIT_REF_REPLACEMENT"
   local files=(
     "${REPO_PATH}/.github/workflows/5_builderpackage_alerting_plugin.yml"
     "${REPO_PATH}/.github/workflows/5_builderprecompiled_base-dev-environment.yml"
@@ -479,6 +457,20 @@ update_branch_reference_defaults() {
     log "Replacing default: main with default: ${bump_string} in $f (where applicable)"
     sed_inplace "s/^\\([[:space:]]*default:[[:space:]]*\\)main\\([[:space:]]*\\)$/\\1${bump_string}\\2/" "$f"
   done
+}
+
+get_git_ref_replacement(){
+  local replacement
+  if [ "$TAG" = true ]; then
+    replacement="v${VERSION}"
+    if [ -n "$STAGE" ]; then
+      replacement+="-${STAGE}"
+    fi
+  else
+    replacement="${VERSION}"
+  fi
+
+  GIT_REF_REPLACEMENT="$replacement"
 }
 
 # --- Main Execution ---
@@ -509,6 +501,8 @@ main() {
   # Compare versions and determine revision
   compare_versions_and_set_revision
 
+  get_git_ref_replacement
+  
   # Start file modifications
   log "Starting file modifications..."
 
@@ -516,7 +510,6 @@ main() {
   update_package_json
   update_changelog
   update_branch_reference_defaults
-  update_manual_build_workflow
 
   log "File modifications completed."
   log "Repository bump completed successfully. Log file: $LOG_FILE"
