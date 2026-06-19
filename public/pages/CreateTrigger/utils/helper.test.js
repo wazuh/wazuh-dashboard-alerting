@@ -34,6 +34,12 @@ describe('CreateTrigger/utils/helper', () => {
       expect(getDefaultScript(monitorValues)).toEqual(FORMIK_INITIAL_DOC_LEVEL_SCRIPT);
     });
 
+    // Wazuh: Add test case for ACTIVE_RESPONSE monitor type
+    test(`when monitor_type is ${MONITOR_TYPE.ACTIVE_RESPONSE}`, () => {
+      const monitorValues = { monitor_type: MONITOR_TYPE.ACTIVE_RESPONSE };
+      expect(getDefaultScript(monitorValues)).toEqual(FORMIK_INITIAL_DOC_LEVEL_SCRIPT);
+    });
+
     test(`when monitor_type is ${MONITOR_TYPE.QUERY_LEVEL}`, () => {
       const monitorValues = { monitor_type: MONITOR_TYPE.QUERY_LEVEL };
       expect(getDefaultScript(monitorValues)).toEqual(FORMIK_INITIAL_TRIGGER_VALUES.script);

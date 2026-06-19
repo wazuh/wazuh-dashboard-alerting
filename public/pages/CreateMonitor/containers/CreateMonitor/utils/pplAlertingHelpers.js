@@ -202,6 +202,7 @@ export const prepareTriggers = ({
         triggerType = TRIGGER_TYPE.BUCKET_LEVEL;
         break;
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         triggerType = TRIGGER_TYPE.DOC_LEVEL;
         break;
       case MONITOR_TYPE.COMPOSITE_LEVEL:

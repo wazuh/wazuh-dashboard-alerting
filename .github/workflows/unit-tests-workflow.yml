@@ -1,11 +1,11 @@
 name: Unit tests workflow
+# Wazuh: Changed the trigger from push to pull_request
+# Wazuh: Added the ready_for_review type to the pull_request trigger
+# Wazuh: Added the draft == false condition to the tests-linux job  
 on:
-  push:
-    branches:
-      - "**"
   pull_request:
-    branches:
-      - "**"
+    branches: ['*']
+    types: [opened, synchronize, reopened, ready_for_review]
 env:
   OPENSEARCH_DASHBOARDS_VERSION: 'main'
 jobs:
@@ -15,6 +15,7 @@ jobs:
       product: opensearch-dashboards
 
   tests-linux:
+    if: github.event.pull_request.draft == false
     needs: Get-CI-Image-Tag
     name: Run unit tests
     runs-on: ubuntu-latest
@@ -46,52 +47,53 @@ jobs:
       - name: Uploads coverage
         uses: codecov/codecov-action@v1
 
-  tests-macos-windows:
-    name: Run unit tests
-    strategy:
-      matrix:
-        os: [ macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      # Enable longer filenames for windows
-      - name: Enable longer filenames
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: git config --system core.longpaths true
-      - name: Checkout OpenSearch Dashboards
-        uses: actions/checkout@v2
-        with:
-          repository: opensearch-project/OpenSearch-Dashboards
-          ref: ${{ env.OPENSEARCH_DASHBOARDS_VERSION }}
-          path: OpenSearch-Dashboards
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version-file: './OpenSearch-Dashboards/.nvmrc'
-          registry-url: 'https://registry.npmjs.org'
-      - name: Install Yarn
-        # Need to use bash to avoid having a windows/linux specific step
-        shell: bash
-        run: |
-          YARN_VERSION=$(node -p "require('./OpenSearch-Dashboards/package.json').engines.yarn")
-          echo "Installing yarn@$YARN_VERSION"
-          npm i -g yarn@$YARN_VERSION
-      - run: node -v
-      - run: yarn -v
-      - name: Checkout Alerting OpenSearch Dashboards plugin
-        uses: actions/checkout@v2
-        with:
-          path: OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
-      - name: Bootstrap plugin/opensearch-dashboards
-        run: |
-          cd OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
-          yarn osd bootstrap --single-version=loose
-      - name: Run window tests
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          cd OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
-          yarn run test:jest:windows --coverage
-      - name: Run non-window tests
-        if: ${{ matrix.os != 'windows-latest' }}
-        run: |
-          cd OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
-          yarn run test:jest --coverage
+  # Wazuh: Commented this job because it is not needed to run unit tests on macos and windows
+  # tests-macos-windows:
+  #   name: Run unit tests
+  #   strategy:
+  #     matrix:
+  #       os: [ macos-latest, windows-latest ]
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     # Enable longer filenames for windows
+  #     - name: Enable longer filenames
+  #       if: ${{ matrix.os == 'windows-latest' }}
+  #       run: git config --system core.longpaths true
+  #     - name: Checkout OpenSearch Dashboards
+  #       uses: actions/checkout@v2
+  #       with:
+  #         repository: opensearch-project/OpenSearch-Dashboards
+  #         ref: ${{ env.OPENSEARCH_DASHBOARDS_VERSION }}
+  #         path: OpenSearch-Dashboards
+  #     - name: Setup Node
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version-file: './OpenSearch-Dashboards/.nvmrc'
+  #         registry-url: 'https://registry.npmjs.org'
+  #     - name: Install Yarn
+  #       # Need to use bash to avoid having a windows/linux specific step
+  #       shell: bash
+  #       run: |
+  #         YARN_VERSION=$(node -p "require('./OpenSearch-Dashboards/package.json').engines.yarn")
+  #         echo "Installing yarn@$YARN_VERSION"
+  #         npm i -g yarn@$YARN_VERSION
+  #     - run: node -v
+  #     - run: yarn -v
+  #     - name: Checkout Alerting OpenSearch Dashboards plugin
+  #       uses: actions/checkout@v2
+  #       with:
+  #         path: OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
+  #     - name: Bootstrap plugin/opensearch-dashboards
+  #       run: |
+  #         cd OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
+  #         yarn osd bootstrap --single-version=loose
+  #     - name: Run window tests
+  #       if: ${{ matrix.os == 'windows-latest' }}
+  #       run: |
+  #         cd OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
+  #         yarn run test:jest:windows --coverage
+  #     - name: Run non-window tests
+  #       if: ${{ matrix.os != 'windows-latest' }}
+  #       run: |
+  #         cd OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
+  #         yarn run test:jest --coverage

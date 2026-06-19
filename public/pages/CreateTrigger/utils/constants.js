@@ -80,3 +80,6 @@ export const webhookNotificationActionMessageComponent = (props) => (
   <Message isSubjectDisabled {...props} />
 );
 export const defaultNotificationActionMessageComponent = (props) => <Message {...props} />;
+
+// Wazuh
+export const activeResponseActionMessageComponent = () => null;

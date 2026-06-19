@@ -34,6 +34,7 @@ export function triggerDefinitionToFormik(trigger, monitor) {
     case MONITOR_TYPE.BUCKET_LEVEL:
       return bucketLevelTriggerToFormik(trigger, monitor);
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       return documentLevelTriggerToFormik(trigger, monitor);
     case MONITOR_TYPE.COMPOSITE_LEVEL:
       return compositeTriggerToFormik(trigger, monitor);

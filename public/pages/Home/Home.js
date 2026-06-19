@@ -36,11 +36,12 @@ export default class Home extends Component {
         name: 'Monitors',
         route: 'monitors',
       },
-      {
-        id: 'destinations',
-        name: 'Destinations',
-        route: 'destinations',
-      },
+      // Wazuh development: Destinations tab is currently hidden because it is deprecated.
+      // {
+      //   id: 'destinations',
+      //   name: 'Destinations',
+      //   route: 'destinations',
+      // },
     ];
   }
 

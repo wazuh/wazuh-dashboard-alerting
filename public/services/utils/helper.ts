@@ -4,6 +4,7 @@
  */
 
 import { Get, Set } from '../../../../../src/plugins/opensearch_dashboards_utils/common';
+import { MANAGED_CHANNEL_TYPES } from '../../utils/constants';
 import {
   ChannelItemType,
   // NotificationItem,
@@ -92,3 +93,9 @@ export function createNullableGetterSetter<T>(): [Get<T | undefined>, Set<T>] {
 // export const eventListToNotifications = (events: any[]): NotificationItem[] => {
 //   return events?.map((event) => eventToNotification(event)) || [];
 // };
+
+
+// Wazuh
+export const isManagedChannelType = (channelType: string) => {
+    return MANAGED_CHANNEL_TYPES.includes(channelType);
+}

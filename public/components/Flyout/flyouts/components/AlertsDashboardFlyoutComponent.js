@@ -152,7 +152,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
 
     const { monitorType, commentsEnabled, tabId } = this.state;
     if (
-      ([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(monitorType) &&
+      ([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) &&
         !_.isEqual(prevState.selectedItems, this.state.selectedItems)) ||
       (tabId === TABLE_TAB_IDS.ALERTS.id && commentsEnabled !== prevState.commentsEnabled)
     )
@@ -300,6 +300,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       case MONITOR_TYPE.BUCKET_LEVEL:
         return TRIGGER_TYPE.BUCKET_LEVEL;
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: allow AR monitor type
         return TRIGGER_TYPE.DOC_LEVEL;
       case MONITOR_TYPE.COMPOSITE_LEVEL:
         return TRIGGER_TYPE.COMPOSITE_LEVEL;
@@ -336,6 +337,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
         case MONITOR_TYPE.QUERY_LEVEL:
         case MONITOR_TYPE.CLUSTER_METRICS:
         case MONITOR_TYPE.DOC_LEVEL:
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         case MONITOR_TYPE.COMPOSITE_LEVEL:
           return `${item.id}-${item.version}`;
         case MONITOR_TYPE.BUCKET_LEVEL:
@@ -354,6 +356,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
           columns.push(CLUSTER_METRICS_CROSS_CLUSTER_ALERT_TABLE_COLUMN);
           break;
         case MONITOR_TYPE.DOC_LEVEL:
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           columns = _.cloneDeep(queryColumns);
           columns.splice(
             0,
@@ -511,8 +514,12 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     const { tabId } = this.state;
     const tabs = [
       { ...TABLE_TAB_IDS.ALERTS, content: this.renderAlertsTable() },
-      { ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() },
+      // Wazuh: deprecated `Document findings` tab
+      // { ...TABLE_TAB_IDS.FINDINGS, content: this.renderFindingsTable() },
     ];
+
+    if (tabs.length < 2) return null; // Wazuh: hide tabs when there are less than 2
+
     return tabs.map((tab, index) => (
       <EuiTab
         key={`${tab.id}${index}`}
@@ -552,7 +559,9 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     const groupBy = _.get(monitor, MONITOR_GROUP_BY);
     const condition =
       searchType === SEARCH_TYPE.GRAPH &&
-      (monitorType === MONITOR_TYPE.BUCKET_LEVEL || monitorType === MONITOR_TYPE.DOC_LEVEL)
+      (monitorType === MONITOR_TYPE.BUCKET_LEVEL ||
+        monitorType === MONITOR_TYPE.DOC_LEVEL ||
+        monitorType === MONITOR_TYPE.ACTIVE_RESPONSE) // Wazuh: Handle Active Response monitor type
         ? this.getMultipleGraphConditions(trigger)
         : _.get(trigger, 'condition.script.source', DEFAULT_EMPTY_DATA);
 
@@ -560,6 +569,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     switch (monitorType) {
       case MONITOR_TYPE.BUCKET_LEVEL:
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         displayMultipleConditions = true;
         break;
       default:
@@ -585,6 +595,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
     let displayTableTabs;
     switch (monitorType) {
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         displayTableTabs = true;
         break;
       default:
@@ -656,7 +667,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
               </p>
             </EuiText>
           </EuiFlexItem>
-          {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(monitorType) && (
+          {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) && (
             <EuiFlexItem>
               <EuiText size="s" data-test-subj={`alertsDashboardFlyout_timeRange_${trigger_name}`}>
                 <strong>Time range for the last</strong>
@@ -665,7 +676,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
             </EuiFlexItem>
           )}
         </EuiFlexGroup>
-        {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL].includes(monitorType) && (
+        {![MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) && (
           <div>
             <EuiSpacer size={'xxl'} />
             <EuiFlexGroup>

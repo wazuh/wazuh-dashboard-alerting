@@ -11,7 +11,7 @@ import { EuiHealth, EuiHighlight } from '@elastic/eui';
 import { FormikComboBox } from '../../../../components/FormControls';
 import { validateIndex, hasError, isInvalid } from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
-import { MONITOR_TYPE } from '../../../../utils/constants';
+import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
 import CrossClusterConfiguration from '../../components/CrossClusterConfigurations/containers';
 import {
   getDataSourceQueryObj,
@@ -65,14 +65,19 @@ class MonitorIndex extends React.Component {
     this.onFetch = this.onFetch.bind(this);
   }
 
+  getInitialSearchQuery() {
+    return this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE
+      ? ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN
+      : '';
+  }
+
   componentDidMount() {
-    // Simulate initial load.
-    this.onSearchChange('');
+    this.onSearchChange(this.getInitialSearchQuery());
   }
 
   componentDidUpdate(prevProps) {
     if (isDataSourceChanged(prevProps, this.props)) {
-      this.onSearchChange('');
+      this.onSearchChange(this.getInitialSearchQuery());
     }
   }
 
@@ -113,12 +118,12 @@ class MonitorIndex extends React.Component {
     // for a specific query (where we do not append *) if there is at
     // least a single character being searched for.
     if (index === '*:') {
-      return [];
+      return { indices: [], dataStreamAliases: [] };
     }
 
     // This should never match anything so do not bother
     if (index === '') {
-      return [];
+      return { indices: [], dataStreamAliases: [] };
     }
     try {
       const dataSourceQuery = getDataSourceQueryObj();
@@ -128,17 +133,36 @@ class MonitorIndex extends React.Component {
       });
 
       if (response.ok) {
-        const indices = response.resp.map(({ health, index, status }) => ({
-          label: index,
-          health,
-          status,
-        }));
-        return _.sortBy(indices, 'label');
+        const indices = [];
+        const dataStreamAliases = [];
+        const dataStreamsSet = new Set();
+
+        // Matches OpenSearch data stream backing indices (e.g., .ds-wazuh-alerts-000001)
+        const DATA_STREAM_BACKING_INDEX_PATTERN = /^\.ds-(.+)-\d+$/;
+        const DATA_STREAM_NAME_GROUP = 1;
+
+        response.resp.forEach(({ health, index: idx, status }) => {
+          const dsMatch = idx.match(DATA_STREAM_BACKING_INDEX_PATTERN);
+          if (dsMatch) {
+            const dsName = dsMatch[DATA_STREAM_NAME_GROUP];
+            if (!dataStreamsSet.has(dsName)) {
+              dataStreamsSet.add(dsName);
+              dataStreamAliases.push({ label: dsName });
+            }
+          } else {
+            indices.push({ label: idx, health, status });
+          }
+        });
+
+        return {
+          indices: _.sortBy(indices, 'label'),
+          dataStreamAliases: _.sortBy(dataStreamAliases, 'label'),
+        };
       }
-      return [];
+      return { indices: [], dataStreamAliases: [] };
     } catch (err) {
       console.error(err);
-      return [];
+      return { indices: [], dataStreamAliases: [] };
     }
   }
 
@@ -174,18 +198,22 @@ class MonitorIndex extends React.Component {
   async onFetch(query) {
     this.setState({ isLoading: true, indexPatternExists: false });
     if (query.endsWith('*')) {
-      const exactMatchedIndices = await this.handleQueryIndices(query);
+      const exactResult = await this.handleQueryIndices(query);
       const exactMatchedAliases = await this.handleQueryAliases(query);
       createReasonableWait(() => {
         // If the search changed, discard this state
         if (query !== this.lastQuery) {
           return;
         }
-        this.setState({ exactMatchedIndices, exactMatchedAliases, isLoading: false });
+        this.setState({
+          exactMatchedIndices: exactResult.indices,
+          exactMatchedAliases: exactMatchedAliases.concat(exactResult.dataStreamAliases),
+          isLoading: false,
+        });
       });
     } else {
-      const partialMatchedIndices = await this.handleQueryIndices(`${query}*`);
-      const exactMatchedIndices = await this.handleQueryIndices(query);
+      const partialResult = await this.handleQueryIndices(`${query}*`);
+      const exactResult = await this.handleQueryIndices(query);
       const partialMatchedAliases = await this.handleQueryAliases(`${query}*`);
       const exactMatchedAliases = await this.handleQueryAliases(query);
       createReasonableWait(() => {
@@ -195,10 +223,10 @@ class MonitorIndex extends React.Component {
         }
 
         this.setState({
-          partialMatchedIndices,
-          exactMatchedIndices,
-          partialMatchedAliases,
-          exactMatchedAliases,
+          partialMatchedIndices: partialResult.indices,
+          exactMatchedIndices: exactResult.indices,
+          partialMatchedAliases: partialMatchedAliases.concat(partialResult.dataStreamAliases),
+          exactMatchedAliases: exactMatchedAliases.concat(exactResult.dataStreamAliases),
           isLoading: false,
         });
       });
@@ -223,7 +251,7 @@ class MonitorIndex extends React.Component {
       exactMatchedAliases,
     } = this.state;
 
-    const { visibleOptions } = getMatchedOptions(
+    let { visibleOptions } = getMatchedOptions(
       allIndices, //all indices
       partialMatchedIndices,
       exactMatchedIndices,
@@ -233,9 +261,18 @@ class MonitorIndex extends React.Component {
       false //isIncludingSystemIndices
     );
 
+    // Wazuh: restrict index options to findings indices for Active Response monitors
+    if (this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE) {
+      const isFindingsIndex = (o) => o.label.startsWith('wazuh-findings');
+      visibleOptions = visibleOptions
+        .map((group) => ({ ...group, options: group.options.filter(isFindingsIndex) }))
+        .filter((group) => group.options.length > 0);
+    }
+
     let supportMultipleIndices = true;
     let supportsCrossClusterMonitoring = false;
     switch (this.props.monitorType) {
+      case MONITOR_TYPE.ACTIVE_RESPONSE:
       case MONITOR_TYPE.DOC_LEVEL:
         supportMultipleIndices = false;
         supportsCrossClusterMonitoring = false;

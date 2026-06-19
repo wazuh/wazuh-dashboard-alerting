@@ -68,6 +68,7 @@ export default function pplAlertingMonitorToFormik(monitorIn) {
           searchType: SEARCH_TYPE.CLUSTER_METRICS,
         };
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         return docLevelInputToFormik(monitor);
       case MONITOR_TYPE.COMPOSITE_LEVEL: {
         const triggerConditions = _.get(

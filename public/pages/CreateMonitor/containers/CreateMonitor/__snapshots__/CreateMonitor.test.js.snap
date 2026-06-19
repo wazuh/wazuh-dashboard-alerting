@@ -91,6 +91,7 @@ exports[`CreateMonitor renders 1`] = `
       }
     }
     onSubmit={[Function]}
+    validate={[Function]}
     validateOnChange={false}
   >
     <Component />

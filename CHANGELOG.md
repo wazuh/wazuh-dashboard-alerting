@@ -1,0 +1,25 @@
+# Change Log
+
+All notable changes to the Wazuh dashboard alerting plugin will be documented in this file.
+
+## Wazuh dashboard v5.0.0 - OpenSearch Dashboards 3.7.0 - Revision 03
+
+### Added
+
+- Support for Wazuh 5.0.0
+- Added debounce to Document Level Query text inputs
+- Add "Active Response" monitor type [#33](https://github.com/wazuh/wazuh-dashboard-alerting/pull/33)
+
+### Changed
+
+- Changed category in the side menu to `Explore` [#4](https://github.com/wazuh/wazuh-dashboard-alerting/pull/4)
+- Support `date` and `ip` type fields in document level queries [#22](https://github.com/wazuh/wazuh-dashboard-alerting/pull/22)
+- Hide "Add active response" button for all monitor types except "Per document monitor" / Do not auto-load notification form when adding a trigger. [#18](https://github.com/wazuh/wazuh-dashboard-alerting/pull/18)
+- Hide `security_analytics` owned monitors in table [#85](https://github.com/wazuh/wazuh-dashboard-alerting/pull/85)
+- Hide `Destinations` tab [#88](https://github.com/wazuh/wazuh-dashboard-alerting/pull/88)
+- Hide `Document findings` tab in Active Response and Per document monitor details [#89](https://github.com/wazuh/wazuh-dashboard-alerting/pull/89)
+
+### Fixed
+
+- Fixed request execution in Extraction Query Editor [#24](https://github.com/wazuh/wazuh-dashboard-alerting/pull/24)
+- Fixed duplicated button in Monitors list [#73](https://github.com/wazuh/wazuh-dashboard-alerting/pull/73)
