@@ -1,16 +1,17 @@
 name: Unit tests workflow
 # Wazuh: Changed the trigger from push to pull_request
 # Wazuh: Added the ready_for_review type to the pull_request trigger
-# Wazuh: Added the draft == false condition to the tests-linux job  
+# Wazuh: Added the draft == false condition to the tests-linux job
 on:
   pull_request:
     branches: ['*']
     types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore: ['tools/**']
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 env:
-  OPENSEARCH_DASHBOARDS_VERSION: 'main'
+  OPENSEARCH_DASHBOARDS_VERSION: '3.6'
 jobs:
   Get-CI-Image-Tag:
     if: github.event.pull_request.draft == false
