@@ -1,7 +1,7 @@
 name: Unit tests workflow
 # Wazuh: Changed the trigger from push to pull_request
 # Wazuh: Added the ready_for_review type to the pull_request trigger
-# Wazuh: Added the draft == false condition to the tests-linux job  
+# Wazuh: Added the draft == false condition to the tests-linux job
 on:
   pull_request:
     branches: ['*']
@@ -37,6 +37,10 @@ jobs:
           repository: opensearch-project/OpenSearch-Dashboards
           ref: ${{ env.OPENSEARCH_DASHBOARDS_VERSION }}
           path: OpenSearch-Dashboards
+      - name: Dependency installation
+        run: |
+          cd OpenSearch-Dashboards
+          yarn osd bootstrap --single-version=loose
       - name: Checkout Alerting OpenSearch Dashboards plugin
         uses: actions/checkout@v2
         with:
@@ -44,10 +48,9 @@ jobs:
       - name: Run non-window tests
         run: |
           chown -R 1000:1000 `pwd`
-          cd ./OpenSearch-Dashboards/
           su `id -un 1000` -c "source $NVM_DIR/nvm.sh && nvm use && node -v && yarn -v &&
                                cd ./plugins/alerting-dashboards-plugin &&
-                               whoami && yarn osd bootstrap --single-version=loose && yarn build && yarn run test:jest --coverage"
+                               whoami && yarn && yarn build && yarn run test:jest --coverage"
       - name: Uploads coverage
         uses: codecov/codecov-action@v1
 
