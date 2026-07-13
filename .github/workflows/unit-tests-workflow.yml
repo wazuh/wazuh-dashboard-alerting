@@ -49,6 +49,7 @@ jobs:
           path: OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
       - name: Run non-window tests
         run: |
+          cd OpenSearch-Dashboards
           chown -R 1000:1000 `pwd`
           su `id -un 1000` -c "cd ./plugins/alerting-dashboards-plugin &&
                                whoami && yarn && yarn build && yarn run test:jest --coverage"
