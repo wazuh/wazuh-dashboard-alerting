@@ -6,11 +6,12 @@ on:
   pull_request:
     branches: ['*']
     types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore: ['tools/**']
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 env:
-  OPENSEARCH_DASHBOARDS_VERSION: 'main'
+  OPENSEARCH_DASHBOARDS_VERSION: '3.6.0.0'
 jobs:
   Get-CI-Image-Tag:
     if: github.event.pull_request.draft == false
@@ -37,22 +38,17 @@ jobs:
           repository: opensearch-project/OpenSearch-Dashboards
           ref: ${{ env.OPENSEARCH_DASHBOARDS_VERSION }}
           path: OpenSearch-Dashboards
-      - name: Dependency installation
-        run: |
-          cd OpenSearch-Dashboards
-          chown -R 1000:1000 `pwd`
-          su `id -un 1000` -c "source $NVM_DIR/nvm.sh && nvm use && node -v && yarn -v &&
-                               yarn osd bootstrap --single-version=loose"
       - name: Checkout Alerting OpenSearch Dashboards plugin
         uses: actions/checkout@v2
         with:
           path: OpenSearch-Dashboards/plugins/alerting-dashboards-plugin
       - name: Run non-window tests
         run: |
-          cd OpenSearch-Dashboards
           chown -R 1000:1000 `pwd`
-          su `id -un 1000` -c "cd ./plugins/alerting-dashboards-plugin &&
-                               whoami && yarn && yarn build && yarn run test:jest --coverage"
+          cd ./OpenSearch-Dashboards/
+          su `id -un 1000` -c "source $NVM_DIR/nvm.sh && nvm use && node -v && yarn -v &&
+                               cd ./plugins/alerting-dashboards-plugin &&
+                               whoami && yarn osd bootstrap --single-version=loose && yarn build && yarn run test:jest --coverage"
       - name: Uploads coverage
         uses: codecov/codecov-action@v1
 
