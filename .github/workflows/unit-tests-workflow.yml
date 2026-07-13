@@ -11,7 +11,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 env:
-  OPENSEARCH_DASHBOARDS_VERSION: '3.6.0.0'
+  OPENSEARCH_DASHBOARDS_VERSION: '3.6'
 jobs:
   Get-CI-Image-Tag:
     if: github.event.pull_request.draft == false
