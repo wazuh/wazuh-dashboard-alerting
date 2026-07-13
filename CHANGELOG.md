@@ -1,8 +1,6 @@
 # Change Log
 
-All notable changes to the Wazuh dashboard alerting plugin will be documented in this file.
-
-## Wazuh dashboard v5.0.0 - OpenSearch Dashboards 3.6.0 - Revision 04
+## [v5.0.0]
 
 ### Added
 
@@ -23,3 +21,5 @@ All notable changes to the Wazuh dashboard alerting plugin will be documented in
 
 - Fixed request execution in Extraction Query Editor [#24](https://github.com/wazuh/wazuh-dashboard-alerting/pull/24)
 - Fixed duplicated button in Monitors list [#73](https://github.com/wazuh/wazuh-dashboard-alerting/pull/73)
+
+## Prior versions
