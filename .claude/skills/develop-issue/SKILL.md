@@ -1,6 +1,6 @@
 ---
 name: develop-issue
-description: Implement a GitHub issue end-to-end in a Wazuh Dashboard repo — plan, code following repo conventions, add colocated tests, validate with check-standards, add the CHANGELOG entry, and deliver a filled PR-template body (leaving Evidence/screenshot to the developer) WITHOUT opening the PR. Use when the user provides an issue to develop, implement, or work on.
+description: Implement a GitHub issue end-to-end in a Wazuh Dashboard repo — plan, code following repo conventions, add colocated tests, validate with check-standards, add the CHANGELOG entry, and deliver a filled PR-template body (leaving Results and Evidence/screenshot to the developer) WITHOUT opening the PR. Use when the user provides an issue to develop, implement, or work on.
 ---
 
 # Develop an issue (issue → code → tests → delivery)
@@ -33,7 +33,8 @@ gh issue view <issue-url>
 
 - **Internal** — URL contains `internal-devel-request` (e.g.
   `wazuh/internal-devel-requests`): the issue link is **not** exposed in the PR
-  ("Issues Resolved" stays empty) and there is **no CHANGELOG entry**.
+  (`## Description` gets no closing reference) and there is **no CHANGELOG
+  entry**.
 - **Public** — any other repo (e.g. `wazuh/wazuh-dashboard-alerting`): link it in
   the PR and add a CHANGELOG entry pointing to the issue.
 
@@ -87,11 +88,11 @@ for **internal-devel-requests** issues, and for tooling/docs/test-only changes
 
 Invoke **create-pr** in its default prepare-and-hand-off mode. Output:
 
-- The filled PR-template body, with the **`### Description`** completed, the
-  **`### Check List`** boxes that genuinely apply checked, and
-  **`### Issues Resolved` left empty** for internal-devel-requests issues (or
-  `closes #<n>` / issue URL for public ones), plus a screenshot/video reminder for
-  any UI change.
+- The filled PR-template body, with the **`## Description`** completed (public
+  issue → `Closes #<n>` / issue URL; internal-devel-requests → no closing
+  reference), the **`### Review Checklist`** boxes that genuinely apply checked,
+  and a screenshot/video reminder under **`### Results and Evidence`** for any
+  UI change.
 - The pre-flight report (branch, suggested base, DCO status, check-standards
   result, CHANGELOG status, and the `gh pr create` command to run when ready).
 
