@@ -31,6 +31,7 @@ ambiguous between two rows.
 | New feature / enhancement request | `feature_request.md` | `enhancement, untriaged` |
 | New OpenSearch version compatibility tracking | `compatibility_request.md` | `request/operational, level/task, type/maintenance` |
 | Documentation gap or fix | `documentation.md` | *(none — see note below)* |
+| Engineering task / improvement | `task_template.md` | `level/task` |
 
 ### 2. Issue-first duplicate check
 
@@ -91,9 +92,7 @@ fill it verbatim; do not inline template bodies in this skill.
 ### 4. Labels
 
 Keep the template's default labels as-is; add an extra triage label only if
-the user explicitly names one. Do not invent labels or an approval workflow —
-and don't promise a label that this repo's real label set (verified above)
-doesn't have.
+the user explicitly names one. Do not invent labels or an approval workflow.
 
 ### 5. Emit the ready-to-file body + report
 
@@ -103,7 +102,7 @@ report for the human to review:
 ```
 Issue pre-flight
 - Template: <file>
-- Labels: <label list actually applicable in this repo>
+- Labels: <label list>
 - Duplicate check: no matches found / possible match: <issue-url>
 - Command to open it: gh issue create --template <file> --label "<labels>"
 ```
