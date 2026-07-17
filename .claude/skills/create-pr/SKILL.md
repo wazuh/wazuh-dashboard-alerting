@@ -96,9 +96,9 @@ Add one entry under the upcoming version, in the correct section
 the PR.**
 
 > **repo-specific (wazuh-dashboard-alerting):** the changelog is
-> [`CHANGELOG.md`](../../../CHANGELOG.md) at the repo root (starts with
-> `# Change Log` and an intro line), grouped under a version heading like
-> `## Wazuh dashboard v5.0.0 - OpenSearch Dashboards 3.6.0 - Revision 04` with
+> [`CHANGELOG.md`](../../../CHANGELOG.md) at the repo root, grouped under a version
+> heading like `## [v5.0.0]` (no title header, no OpenSearch/Revision suffix — check
+> the file's current top entry, the format has changed before) with
 > `### Added` / `### Changed` / `### Fixed` / `### Removed` subsections. Group with
 > an existing entry if the PR continues a previously merged feature. (Many
 > historical entries link to PRs; for new work, prefer the **issue** link.)
@@ -107,7 +107,7 @@ the PR.**
 
 - The issue is from **internal-devel-requests** (internal request → no changelog).
 - The PR is internal-tooling / docs-only / test-only / dependency-bump with no
-  user-facing impact — add the **`no changelog`** label to the PR instead.
+  user-facing impact — add the **`no-changelog`** label to the PR instead.
 
 When unsure (and the issue is public), add an entry.
 
@@ -155,7 +155,7 @@ PR pre-flight
 - Commits DCO-signed: yes / no (missing: <hashes>)
 - check-standards: PASS / FAIL (<summary>)
 - Issue source: public (<url>) / internal-devel-requests (link withheld)
-- CHANGELOG: entry added (links to issue) / not needed (internal / `no changelog`)
+- CHANGELOG: entry added (links to issue) / not needed (internal / `no-changelog`)
 - UI change: yes → evidence attached? / no
 - Command to open it: gh pr create --draft --base <base> ...
 ```
