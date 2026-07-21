@@ -21,3 +21,4 @@
 - Fixed duplicated button in Monitors list [#73](https://github.com/wazuh/wazuh-dashboard-alerting/pull/73)
 
 ## Prior versions
+
