@@ -5,17 +5,17 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Target version (e.g. 5.0.0)"
-        default: ""
+        description: 'Target version (e.g. 5.0.0)'
+        default: ''
         required: false
         type: string
       stage:
-        description: "Version stage (e.g. alpha0)"
-        default: ""
+        description: 'Version stage (e.g. alpha0)'
+        default: ''
         required: false
         type: string
       issue-link:
-        description: "Issue link in format https://github.com/wazuh/<REPO>/issues/<ISSUE-NUMBER>"
+        description: 'Issue link in format https://github.com/wazuh/<REPO>/issues/<ISSUE-NUMBER>'
         required: true
         type: string
       bump-issue-link:
@@ -23,16 +23,16 @@ on:
         required: false
         type: string
       id:
-        description: "Optional identifier for the run"
+        description: 'Optional identifier for the run'
         required: false
         type: string
       set_as_main:
-        description: "Enable main branch mode: bump version values only, keep branch references pointing to main"
+        description: 'Enable main branch mode: bump version values only, keep branch references pointing to main'
         required: false
         type: boolean
         default: false
       revert:
-        description: "Set to true to revert the bump changes applied for this issue"
+        description: 'Set to true to revert the bump changes applied for this issue'
         default: false
         required: false
         type: boolean
