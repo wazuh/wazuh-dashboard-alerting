@@ -9,7 +9,13 @@ import _ from 'lodash';
 import { EuiHealth, EuiHighlight } from '@elastic/eui';
 
 import { FormikComboBox } from '../../../../components/FormControls';
-import { validateIndex, hasError, isInvalid } from '../../../../utils/validate';
+import {
+  hasError,
+  isActiveResponseFindingsIndex,
+  isInvalid,
+  validateActiveResponseIndex,
+  validateIndex,
+} from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
 import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
 import CrossClusterConfiguration from '../../components/CrossClusterConfigurations/containers';
@@ -46,6 +52,11 @@ class MonitorIndex extends React.Component {
   constructor(props) {
     super(props);
     this.lastQuery = null;
+    // Wazuh: text currently typed in the combo box search input, kept so it can be applied on blur.
+    this.searchValue = '';
+    // Wazuh: combo box instance, used to reset its search input once the typed text is applied.
+    this.comboBox = null;
+    this.setComboBoxRef = (comboBox) => (this.comboBox = comboBox);
     this.state = {
       isLoading: false,
       appendedWildcard: false,
@@ -72,28 +83,60 @@ class MonitorIndex extends React.Component {
   }
 
   componentDidMount() {
-    this.onSearchChange(this.getInitialSearchQuery());
+    // Wazuh: the search input starts empty, `onSearchChange` falls back to the initial query.
+    this.onSearchChange('');
   }
 
   componentDidUpdate(prevProps) {
     if (isDataSourceChanged(prevProps, this.props)) {
-      this.onSearchChange(this.getInitialSearchQuery());
+      this.onSearchChange('');
     }
   }
 
   onCreateOption(searchValue, selectedOptions, setFieldValue, supportMultipleIndices) {
-    const normalizedSearchValue = searchValue.trim().toLowerCase();
+    const newOption = { label: searchValue.trim() };
 
-    if (!normalizedSearchValue) return;
+    if (!newOption.label) return;
 
-    const newOption = { label: searchValue };
-    if (supportMultipleIndices) setFieldValue('index', selectedOptions.concat(newOption));
-    else setFieldValue('index', [newOption]);
+    // Wazuh: the monitor form does not validate on change, so validation is requested explicitly.
+    // Otherwise the error of the index being replaced stays on screen until the next interaction.
+    if (supportMultipleIndices) setFieldValue('index', selectedOptions.concat(newOption), true);
+    else setFieldValue('index', [newOption], true);
+  }
+
+  /**
+   * Wazuh: apply the text left in the search input when the combo box loses focus.
+   *
+   * The combo box only turns typed text into a selection on blur while none of its options is
+   * active, and single selection pickers (Active Response and per document monitors) keep an
+   * option active once one is selected, which silently discarded the typed index.
+   *
+   * @returns {boolean} whether the typed text was applied.
+   */
+  commitPendingSearchValue(selectedOptions, form, supportMultipleIndices) {
+    if (!this.searchValue.trim()) return false;
+
+    this.onCreateOption(
+      this.searchValue,
+      selectedOptions,
+      form.setFieldValue,
+      supportMultipleIndices
+    );
+
+    // Reset the search input, otherwise the combo box keeps rendering the typed text as invalid
+    // instead of the index that was just applied.
+    if (this.comboBox?.clearSearchValue) this.comboBox.clearSearchValue();
+    else this.searchValue = '';
+
+    return true;
   }
 
   async onSearchChange(searchValue) {
     const { appendedWildcard } = this.state;
-    let query = searchValue;
+    this.searchValue = searchValue;
+    // Wazuh: the combo box clears its search input after applying a value. Falling back to the
+    // initial query keeps the index options list populated instead of emptying it.
+    let query = searchValue || this.getInitialSearchQuery();
     if (query.length === 1 && canAppendWildcard(query)) {
       query += '*';
       this.setState({ appendedWildcard: true });
@@ -262,12 +305,23 @@ class MonitorIndex extends React.Component {
     );
 
     // Wazuh: restrict index options to findings indices for Active Response monitors
-    if (this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE) {
-      const isFindingsIndex = (o) => o.label.startsWith('wazuh-findings');
+    const isActiveResponse = this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
+    if (isActiveResponse) {
       visibleOptions = visibleOptions
-        .map((group) => ({ ...group, options: group.options.filter(isFindingsIndex) }))
+        .map((group) => ({
+          ...group,
+          options: group.options.filter(({ label }) => isActiveResponseFindingsIndex(label)),
+        }))
         .filter((group) => group.options.length > 0);
     }
+
+    // Wazuh: a typed index bypasses the options list, so Active Response monitors validate the
+    // selected value against the indices this field offers.
+    const validateMonitorIndex = isActiveResponse
+      ? validateActiveResponseIndex(
+          _.flatMap(visibleOptions, ({ options }) => _.map(options, 'label'))
+        )
+      : validateIndex;
 
     let supportMultipleIndices = true;
     let supportsCrossClusterMonitoring = false;
@@ -293,7 +347,7 @@ class MonitorIndex extends React.Component {
           <FormikComboBox
             name="index"
             formRow
-            fieldProps={{ validate: validateIndex }}
+            fieldProps={{ validate: validateMonitorIndex }}
             rowProps={{
               label: 'Index',
               helpText:
@@ -307,8 +361,19 @@ class MonitorIndex extends React.Component {
               async: true,
               isLoading,
               options: visibleOptions,
+              comboBoxRef: this.setComboBoxRef,
               onBlur: (e, field, form) => {
-                form.setFieldTouched('index', true);
+                // Wazuh: apply the typed index, the combo box does not always do it.
+                const applied = this.commitPendingSearchValue(
+                  field.value,
+                  form,
+                  supportMultipleIndices
+                );
+                // Wazuh: `setFieldTouched` validates the value the form had when this handler
+                // started, so validating here after applying a value would bring the error of the
+                // previous value back until the next interaction. The value applied above asks for
+                // validation itself.
+                form.setFieldTouched('index', true, !applied);
               },
               onChange: (options, field, form) => {
                 form.setFieldValue('index', options);

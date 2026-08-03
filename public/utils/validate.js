@@ -5,7 +5,7 @@
 
 import _ from 'lodash';
 import { INDEX, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../utils/constants';
-import { MONITOR_TYPE } from './constants';
+import { ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX, MONITOR_TYPE } from './constants';
 import { TRIGGER_TYPE } from '../pages/CreateTrigger/containers/CreateTrigger/utils/constants';
 import { getDataSourceQueryObj } from '../pages/utils/helpers';
 
@@ -168,6 +168,41 @@ export const validateIndex = (options) => {
     return `One of your inputs contains invalid characters or spaces. Please omit: ${illegalCharacters}`;
   }
 };
+
+// Wazuh: an index belongs to the Wazuh findings indices when it starts with the findings prefix.
+export const isActiveResponseFindingsIndex = (label = '') =>
+  label.trim().toLowerCase().startsWith(ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX);
+
+/**
+ * Wazuh: Active Response monitors can only run over one of the findings indices the index field
+ * offers. Being document level monitors they do not support index patterns either, and a typed
+ * index is applied as it was typed, so the value itself has to be validated to tell the user that
+ * what they typed is not usable instead of letting them believe it was accepted.
+ *
+ * @param availableIndices labels of the indices offered by the index field.
+ */
+export const validateActiveResponseIndex =
+  (availableIndices = []) =>
+  (options) => {
+    const genericError = validateIndex(options);
+    if (genericError) return genericError;
+
+    const indices = options.map(({ value, label }) => value || label);
+
+    if (!indices.every(isActiveResponseFindingsIndex)) {
+      return `Active Response monitors can only use Wazuh findings indices (must start with "${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}").`;
+    }
+
+    if (indices.some((index) => index.includes('*'))) {
+      return 'Index patterns are not supported. Select a single findings index.';
+    }
+
+    // The available indices are unknown until the index field has loaded them, and an index that is
+    // not among them cannot be monitored.
+    if (availableIndices.length && indices.some((index) => !availableIndices.includes(index))) {
+      return 'Select one of the available findings indices.';
+    }
+  };
 
 export function isIndexPatternQueryValid(pattern, illegalCharacters) {
   if (!pattern || !pattern.length) {
