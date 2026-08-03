@@ -11,6 +11,7 @@ import { FORMIK_INITIAL_VALUES } from '../CreateMonitor/utils/constants';
 import MonitorIndex from './MonitorIndex';
 import * as helpers from './utils/helpers';
 import { httpClientMock } from '../../../../../test/mocks';
+import { MONITOR_TYPE } from '../../../../utils/constants';
 
 helpers.createReasonableWait = jest.fn((cb) => cb());
 httpClientMock.post.mockResolvedValue({ ok: true, resp: [] });
@@ -136,6 +137,28 @@ describe('MonitorIndex', () => {
       .simulate('blur');
 
     expect(wrapper.instance().state.touched).toEqual({ index: true });
+  });
+
+  // Wazuh: the hint must not advertise index patterns for doc level monitors
+  describe('index help text', () => {
+    test('advertises wildcards and date math for monitor types that support them', () => {
+      const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.QUERY_LEVEL });
+
+      expect(wrapper.find('.euiFormHelpText').text()).toBe(
+        'You can use a * as a wildcard or date math index resolution in your index pattern'
+      );
+    });
+
+    test.each([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE])(
+      'states the restriction for %s',
+      (monitorType) => {
+        const wrapper = getMountWrapper({ monitorType });
+
+        expect(wrapper.find('.euiFormHelpText').text()).toBe(
+          'Document level monitors do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.'
+        );
+      }
+    );
   });
 
   test('sets option when calling onCreateOption', async () => {

@@ -9,7 +9,12 @@ import _ from 'lodash';
 import { EuiHealth, EuiHighlight } from '@elastic/eui';
 
 import { FormikComboBox } from '../../../../components/FormControls';
-import { validateIndex, hasError, isInvalid } from '../../../../utils/validate';
+import {
+  validateMonitorIndex,
+  supportsIndexPatterns,
+  hasError,
+  isInvalid,
+} from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
 import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
 import CrossClusterConfiguration from '../../components/CrossClusterConfigurations/containers';
@@ -269,6 +274,13 @@ class MonitorIndex extends React.Component {
         .filter((group) => group.options.length > 0);
     }
 
+    // Wazuh: document level monitors are rejected by the backend when the index is a
+    // pattern, so the help text must not advertise wildcards or date math for them.
+    const indexPatternsSupported = supportsIndexPatterns(this.props.monitorType);
+    const indexHelpText = indexPatternsSupported
+      ? 'You can use a * as a wildcard or date math index resolution in your index pattern'
+      : 'Document level monitors do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.';
+
     let supportMultipleIndices = true;
     let supportsCrossClusterMonitoring = false;
     switch (this.props.monitorType) {
@@ -293,11 +305,10 @@ class MonitorIndex extends React.Component {
           <FormikComboBox
             name="index"
             formRow
-            fieldProps={{ validate: validateIndex }}
+            fieldProps={{ validate: validateMonitorIndex(this.props.monitorType) }}
             rowProps={{
               label: 'Index',
-              helpText:
-                'You can use a * as a wildcard or date math index resolution in your index pattern',
+              helpText: indexHelpText,
               isInvalid,
               error: hasError,
               style: { paddingLeft: '10px' },
