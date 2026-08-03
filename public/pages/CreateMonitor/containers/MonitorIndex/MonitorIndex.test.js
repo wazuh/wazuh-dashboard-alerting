@@ -6,6 +6,7 @@
 import React from 'react';
 import { Formik } from 'formik';
 import { mount } from 'enzyme';
+import { act } from 'react-dom/test-utils';
 
 import { FORMIK_INITIAL_VALUES } from '../CreateMonitor/utils/constants';
 import MonitorIndex from './MonitorIndex';
@@ -14,23 +15,47 @@ import { httpClientMock } from '../../../../../test/mocks';
 import { MONITOR_TYPE } from '../../../../utils/constants';
 
 helpers.createReasonableWait = jest.fn((cb) => cb());
-httpClientMock.post.mockResolvedValue({ ok: true, resp: [] });
 
 // Enzyme's change event is synchronous and Formik's handlers are asynchronous
 // https://github.com/formium/formik/issues/937, https://www.benmvp.com/blog/asynchronous-testing-with-enzyme-react-jest/
 const runAllPromises = () => new Promise(setImmediate);
 
+let formikProps;
+
 function getMountWrapper(customProps = {}) {
   return mount(
-    <Formik initialValues={FORMIK_INITIAL_VALUES}>
-      {() => <MonitorIndex httpClient={httpClientMock} {...customProps} />}
+    // `validateOnChange` is disabled to match the monitor form, see CreateMonitor.
+    <Formik initialValues={FORMIK_INITIAL_VALUES} validateOnChange={false}>
+      {(props) => {
+        formikProps = props;
+        return <MonitorIndex httpClient={httpClientMock} {...customProps} />;
+      }}
     </Formik>
   );
+}
+
+// The combo box applies typed text through a native `focusout` listener on its container, which
+// Enzyme's synthetic `simulate('blur')` does not reach.
+function blurComboBox(wrapper) {
+  const comboBox = wrapper.find('[data-test-subj="indicesComboBox"]').hostNodes().getDOMNode();
+  act(() => {
+    comboBox.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+  });
+  wrapper.update();
+}
+
+function typeInComboBox(wrapper, value) {
+  wrapper
+    .find('[data-test-subj="comboBoxSearchInput"]')
+    .hostNodes()
+    .simulate('change', { target: { value } });
 }
 
 describe('MonitorIndex', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // `clearMocks` only clears calls, so the response has to be restored to keep tests isolated.
+    httpClientMock.post.mockResolvedValue({ ok: true, resp: [] });
   });
   test('renders', () => {
     const wrapper = getMountWrapper();
@@ -97,7 +122,9 @@ describe('MonitorIndex', () => {
     const wrapper = getMountWrapper();
 
     expect(await wrapper.find(MonitorIndex).instance().handleQueryAliases('*:')).toEqual([]);
-    expect((await wrapper.find(MonitorIndex).instance().handleQueryIndices('*:')).indices).toEqual([]);
+    expect((await wrapper.find(MonitorIndex).instance().handleQueryIndices('*:')).indices).toEqual(
+      []
+    );
   });
 
   test('returns empty array for data.ok = false', async () => {
@@ -105,7 +132,9 @@ describe('MonitorIndex', () => {
     const wrapper = getMountWrapper();
 
     expect(await wrapper.find(MonitorIndex).instance().handleQueryAliases('random')).toEqual([]);
-    expect((await wrapper.find(MonitorIndex).instance().handleQueryIndices('random')).indices).toEqual([]);
+    expect(
+      (await wrapper.find(MonitorIndex).instance().handleQueryIndices('random')).indices
+    ).toEqual([]);
   });
   //
   test('returns indices/aliases', async () => {
@@ -123,20 +152,18 @@ describe('MonitorIndex', () => {
     ]);
   });
 
-  test.skip('onBlur sets index to touched', () => {
+  test('onBlur sets index to touched', async () => {
     httpClientMock.post.mockResolvedValue({
       ok: true,
       resp: [{ health: 'green', status: 'open', index: 'logstash-0', alias: 'logstash' }],
     });
     const wrapper = getMountWrapper();
 
-    wrapper
-      .find('[data-test-subj="comboBoxSearchInput"]')
-      .hostNodes()
-      .simulate('change', { target: { value: 'l' } })
-      .simulate('blur');
+    typeInComboBox(wrapper, 'l');
+    await runAllPromises();
+    blurComboBox(wrapper);
 
-    expect(wrapper.instance().state.touched).toEqual({ index: true });
+    expect(formikProps.touched).toEqual({ index: true });
   });
 
   // Wazuh: the hint must not advertise index patterns for doc level monitors
@@ -185,5 +212,61 @@ describe('MonitorIndex', () => {
     expect(wrapper.find('[data-test-subj="comboBoxInput"]').text()).toEqual(
       'logstash-0EuiIconMock'
     );
+  });
+
+  test('applies the typed index on blur', async () => {
+    const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.DOC_LEVEL });
+
+    // Leaving the field without an index reports the error.
+    blurComboBox(wrapper);
+    await runAllPromises();
+    expect(formikProps.errors.index).toBe('Must specify an index.');
+
+    typeInComboBox(wrapper, 'logstash-0');
+    await runAllPromises();
+    blurComboBox(wrapper);
+    await runAllPromises();
+
+    expect(formikProps.values.index).toEqual([{ label: 'logstash-0' }]);
+    // The error of the index that was replaced must not survive the blur.
+    expect(formikProps.errors.index).toBeUndefined();
+    // The typed text is applied, so the search input no longer holds it.
+    expect(wrapper.find('[data-test-subj="comboBoxSearchInput"]').hostNodes().prop('value')).toBe(
+      ''
+    );
+  });
+
+  test('rejects indices Active Response monitors cannot run over', async () => {
+    httpClientMock.post.mockImplementation((url) =>
+      Promise.resolve({
+        ok: true,
+        resp: url.includes('_aliases')
+          ? []
+          : [{ health: 'green', status: 'open', index: 'wazuh-findings-v5-000001' }],
+      })
+    );
+    const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
+
+    const typeAndBlur = async (value) => {
+      typeInComboBox(wrapper, value);
+      await runAllPromises();
+      blurComboBox(wrapper);
+      await runAllPromises();
+      // The typed index is always applied, so that it is never taken for a discarded one.
+      expect(formikProps.values.index.map(({ label }) => label)).toEqual([value]);
+    };
+
+    await typeAndBlur('logstash-0');
+    expect(formikProps.errors.index).toMatch('can only use Wazuh findings indices');
+
+    await typeAndBlur('wazuh-findings-v5-*');
+    expect(formikProps.errors.index).toMatch('Index patterns are not supported');
+
+    // A findings index that the field does not offer does not exist.
+    await typeAndBlur('wazuh-findings-v5-000009');
+    expect(formikProps.errors.index).toMatch('Select one of the available findings indices');
+
+    await typeAndBlur('wazuh-findings-v5-000001');
+    expect(formikProps.errors.index).toBeUndefined();
   });
 });
