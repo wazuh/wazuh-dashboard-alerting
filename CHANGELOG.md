@@ -19,7 +19,7 @@
 
 - Fixed request execution in Extraction Query Editor [#24](https://github.com/wazuh/wazuh-dashboard-alerting/pull/24)
 - Fixed duplicated button in Monitors list [#73](https://github.com/wazuh/wazuh-dashboard-alerting/pull/73)
-- Fixed misleading index pattern hint in the Create Monitor index field for document level monitors [#8810](https://github.com/wazuh/wazuh-dashboard-plugins/issues/8810)
+- Fixed misleading index pattern hint in the Create Monitor index field for document level monitors [#136](https://github.com/wazuh/wazuh-dashboard-alerting/issues/136)
 
 ## Prior versions
 
