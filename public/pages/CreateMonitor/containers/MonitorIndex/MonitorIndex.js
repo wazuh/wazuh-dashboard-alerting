@@ -73,6 +73,7 @@ class MonitorIndex extends React.Component {
     this.onSearchChange = this.onSearchChange.bind(this);
     this.handleQueryIndices = this.handleQueryIndices.bind(this);
     this.handleQueryAliases = this.handleQueryAliases.bind(this);
+    this.indexExists = this.indexExists.bind(this);
     this.onFetch = this.onFetch.bind(this);
   }
 
@@ -129,6 +130,19 @@ class MonitorIndex extends React.Component {
     else this.searchValue = '';
 
     return true;
+  }
+
+  /**
+   * Wazuh: whether an index can be monitored, i.e. whether it resolves to an index, a data stream
+   * or an alias. Used to validate an index that was typed instead of picked from the options.
+   */
+  async indexExists(index) {
+    const [{ indices, dataStreamAliases }, aliases] = await Promise.all([
+      this.handleQueryIndices(index),
+      this.handleQueryAliases(index),
+    ]);
+
+    return !!(indices.length || dataStreamAliases.length || aliases.length);
   }
 
   async onSearchChange(searchValue) {
@@ -315,12 +329,10 @@ class MonitorIndex extends React.Component {
         .filter((group) => group.options.length > 0);
     }
 
-    // Wazuh: a typed index bypasses the options list, so Active Response monitors validate the
-    // selected value against the indices this field offers.
+    // Wazuh: a typed index bypasses the options list, so Active Response monitors validate that the
+    // selected value is an existing findings index.
     const validateMonitorIndex = isActiveResponse
-      ? validateActiveResponseIndex(
-          _.flatMap(visibleOptions, ({ options }) => _.map(options, 'label'))
-        )
+      ? validateActiveResponseIndex(this.indexExists)
       : validateIndex;
 
     let supportMultipleIndices = true;
@@ -376,7 +388,9 @@ class MonitorIndex extends React.Component {
                 form.setFieldTouched('index', true, !applied);
               },
               onChange: (options, field, form) => {
-                form.setFieldValue('index', options);
+                // Wazuh: the form does not validate on change, so picking an index from the options
+                // would otherwise keep the error of the index it replaces until the next blur.
+                form.setFieldValue('index', options, true);
               },
               onCreateOption: (value, field, form) => {
                 this.onCreateOption(value, field.value, form.setFieldValue, supportMultipleIndices);
