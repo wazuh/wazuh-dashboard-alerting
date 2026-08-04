@@ -137,12 +137,10 @@ class MonitorIndex extends React.Component {
    * or an alias. Used to validate an index that was typed instead of picked from the options.
    */
   async indexExists(index) {
-    const [{ indices, dataStreamAliases }, aliases] = await Promise.all([
-      this.handleQueryIndices(index),
-      this.handleQueryAliases(index),
-    ]);
+    const { indices, dataStreamAliases } = await this.handleQueryIndices(index);
+    if (indices.length || dataStreamAliases.length) return true;
 
-    return !!(indices.length || dataStreamAliases.length || aliases.length);
+    return (await this.handleQueryAliases(index)).length > 0;
   }
 
   async onSearchChange(searchValue) {
