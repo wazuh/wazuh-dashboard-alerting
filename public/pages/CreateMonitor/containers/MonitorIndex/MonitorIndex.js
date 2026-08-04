@@ -57,6 +57,9 @@ class MonitorIndex extends React.Component {
     // Wazuh: combo box instance, used to reset its search input once the typed text is applied.
     this.comboBox = null;
     this.setComboBoxRef = (comboBox) => (this.comboBox = comboBox);
+    // Wazuh: every index, data stream and alias the searches have resolved, so that validating one
+    // of them does not have to ask the cluster again.
+    this.resolvedIndices = new Set();
     this.state = {
       isLoading: false,
       appendedWildcard: false,
@@ -137,6 +140,8 @@ class MonitorIndex extends React.Component {
    * or an alias. Used to validate an index that was typed instead of picked from the options.
    */
   async indexExists(index) {
+    if (this.resolvedIndices.has(index)) return true;
+
     const { indices, dataStreamAliases } = await this.handleQueryIndices(index);
     if (indices.length || dataStreamAliases.length) return true;
 
@@ -158,6 +163,10 @@ class MonitorIndex extends React.Component {
         this.setState({ appendedWildcard: false });
       }
     }
+
+    // Wazuh: resetting the search input asks for the same query again, and it is reset twice per
+    // applied index, once by this component and once by the combo box itself.
+    if (query === this.lastQuery) return;
 
     this.lastQuery = query;
     this.setState({ query, showingIndexPatternQueryErrors: !!query.length });
@@ -203,9 +212,11 @@ class MonitorIndex extends React.Component {
             if (!dataStreamsSet.has(dsName)) {
               dataStreamsSet.add(dsName);
               dataStreamAliases.push({ label: dsName });
+              this.resolvedIndices.add(dsName); // Wazuh
             }
           } else {
             indices.push({ label: idx, health, status });
+            this.resolvedIndices.add(idx); // Wazuh
           }
         });
 
@@ -241,6 +252,7 @@ class MonitorIndex extends React.Component {
 
       if (response.ok) {
         const indices = response.resp.map(({ alias, index }) => ({ label: alias, index }));
+        indices.forEach(({ label }) => this.resolvedIndices.add(label)); // Wazuh
         return _.sortBy(indices, 'label');
       }
       return [];
