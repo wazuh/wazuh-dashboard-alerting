@@ -38,8 +38,11 @@ export const MONITOR_TYPE = {
   ACTIVE_RESPONSE: 'active_response_monitor', // Wazuh
 };
 
+// Wazuh: Prefix shared by every findings index Active Response monitors are allowed to run over
+export const ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX = 'wazuh-findings';
+
 // Wazuh: Index pattern for findings indices used by Active Response monitors
-export const ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN = 'wazuh-findings*';
+export const ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN = `${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}*`;
 
 export const DESTINATION_ACTIONS = {
   UPDATE_DESTINATION: 'update-destination',

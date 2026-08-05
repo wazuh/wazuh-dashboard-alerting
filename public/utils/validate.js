@@ -5,7 +5,7 @@
 
 import _ from 'lodash';
 import { INDEX, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../utils/constants';
-import { MONITOR_TYPE } from './constants';
+import { ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX, MONITOR_TYPE } from './constants';
 import { TRIGGER_TYPE } from '../pages/CreateTrigger/containers/CreateTrigger/utils/constants';
 import { getDataSourceQueryObj } from '../pages/utils/helpers';
 
@@ -166,6 +166,39 @@ export const validateIndex = (options) => {
   const pattern = options.map(({ value, label }) => value || label).join('');
   if (!isIndexPatternQueryValid(pattern, ILLEGAL_CHARACTERS)) {
     return `One of your inputs contains invalid characters or spaces. Please omit: ${illegalCharacters}`;
+  }
+};
+
+// Wazuh: an index belongs to the Wazuh findings indices when it starts with the findings prefix.
+export const isActiveResponseFindingsIndex = (label = '') =>
+  label.trim().toLowerCase().startsWith(ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX);
+
+/**
+ * Wazuh: Active Response monitors can only run over an existing Wazuh findings index. Being
+ * document level monitors they do not support index patterns either, and a typed index is applied
+ * as it was typed, so the value itself has to be validated to tell the user that what they typed
+ * is not usable instead of letting them believe it was accepted.
+ *
+ * @param indexExists resolves whether an index can be monitored. Existence is asked for instead of
+ * matched against the options the index field shows, which only hold the last search results.
+ */
+export const validateActiveResponseIndex = (indexExists) => async (options) => {
+  const genericError = validateIndex(options);
+  if (genericError) return genericError;
+
+  const indices = options.map(({ value, label }) => value || label);
+
+  if (!indices.every(isActiveResponseFindingsIndex)) {
+    return `Active Response monitors can only use Wazuh findings indices (must start with "${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}").`;
+  }
+
+  if (indices.some((index) => index.includes('*'))) {
+    return 'Index patterns are not supported. Select a single findings index.';
+  }
+
+  const existence = await Promise.all(indices.map(indexExists));
+  if (existence.some((exists) => !exists)) {
+    return 'Index not found. Select one of the available findings indices.';
   }
 };
 
