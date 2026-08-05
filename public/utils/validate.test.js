@@ -14,7 +14,6 @@ import {
   ILLEGAL_CHARACTERS,
   validateIndex,
   validateMonitorIndex,
-  validateActiveResponseIndex,
   supportsIndexPatterns,
   containsIndexPatternSyntax,
   DOC_LEVEL_INDEX_PATTERN_ERROR,
@@ -241,29 +240,6 @@ describe('validateMonitorIndex', () => {
     );
     expect(
       validateMonitorIndex(MONITOR_TYPE.QUERY_LEVEL)([{ label: 'wazuh-alerts-*' }])
-    ).toBeUndefined();
-  });
-});
-
-describe('validateActiveResponseIndex', () => {
-  // Wazuh: the Active Response validator shares the pattern detection with the document level one,
-  // so every pattern form is rejected and not only the wildcard.
-  // `?` is not covered here because it is an illegal character, so the generic index validation
-  // rejects it before the pattern check runs.
-  test.each(['wazuh-findings-v5-*', '<wazuh-findings-{now/d}>', '_all'])(
-    'rejects %s as an index pattern',
-    (index) => {
-      expect(validateActiveResponseIndex(['wazuh-findings-v5-000001'])([{ label: index }])).toEqual(
-        expect.stringContaining('are not supported')
-      );
-    }
-  );
-
-  test('accepts a findings index the field offers', () => {
-    expect(
-      validateActiveResponseIndex(['wazuh-findings-v5-000001'])([
-        { label: 'wazuh-findings-v5-000001' },
-      ])
     ).toBeUndefined();
   });
 });

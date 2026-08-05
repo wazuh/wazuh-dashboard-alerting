@@ -236,18 +236,26 @@ describe('MonitorIndex', () => {
     );
   });
 
-  test('rejects indices Active Response monitors cannot run over', async () => {
-    httpClientMock.post.mockImplementation((url) =>
-      Promise.resolve({
-        ok: true,
-        resp: url.includes('_aliases')
-          ? []
-          : [{ health: 'green', status: 'open', index: 'wazuh-findings-v5-000001' }],
-      })
-    );
-    const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
+  describe('Active Response monitors', () => {
+    // Only this index exists, so the queries of any other one come back empty.
+    const EXISTING_INDEX = 'wazuh-findings-v5-000001';
 
-    const typeAndBlur = async (value) => {
+    beforeEach(() => {
+      httpClientMock.post.mockImplementation((url, { body }) => {
+        const { index, alias } = JSON.parse(body);
+        const query = index || alias;
+        const matches = query.endsWith('*')
+          ? EXISTING_INDEX.startsWith(query.slice(0, -1))
+          : EXISTING_INDEX === query;
+        const resp =
+          matches && !url.includes('_aliases')
+            ? [{ health: 'green', status: 'open', index: EXISTING_INDEX }]
+            : [];
+        return Promise.resolve({ ok: true, resp });
+      });
+    });
+
+    const typeAndBlur = async (wrapper, value) => {
       typeInComboBox(wrapper, value);
       await runAllPromises();
       blurComboBox(wrapper);
@@ -256,17 +264,34 @@ describe('MonitorIndex', () => {
       expect(formikProps.values.index.map(({ label }) => label)).toEqual([value]);
     };
 
-    await typeAndBlur('logstash-0');
-    expect(formikProps.errors.index).toMatch('can only use Wazuh findings indices');
+    test('reject the indices they cannot run over', async () => {
+      const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
 
-    await typeAndBlur('wazuh-findings-v5-*');
-    expect(formikProps.errors.index).toMatch('Index patterns are not supported');
+      await typeAndBlur(wrapper, 'logstash-0');
+      expect(formikProps.errors.index).toMatch('can only use Wazuh findings indices');
 
-    // A findings index that the field does not offer does not exist.
-    await typeAndBlur('wazuh-findings-v5-000009');
-    expect(formikProps.errors.index).toMatch('Select one of the available findings indices');
+      await typeAndBlur(wrapper, 'wazuh-findings-v5-*');
+      expect(formikProps.errors.index).toMatch('Index patterns are not supported');
 
-    await typeAndBlur('wazuh-findings-v5-000001');
-    expect(formikProps.errors.index).toBeUndefined();
+      await typeAndBlur(wrapper, 'wazuh-findings-v5-000009');
+      expect(formikProps.errors.index).toMatch('Index not found');
+
+      await typeAndBlur(wrapper, EXISTING_INDEX);
+      expect(formikProps.errors.index).toBeUndefined();
+    });
+
+    test('clear the error when an index is picked from the options', async () => {
+      const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
+
+      await typeAndBlur(wrapper, 'wazuh-findings-v5-000009');
+      expect(formikProps.errors.index).toMatch('Index not found');
+
+      // Picking an index has to report on its own, the form does not validate on change.
+      wrapper.find('EuiCompressedComboBox').prop('onChange')([{ label: EXISTING_INDEX }]);
+      await runAllPromises();
+
+      expect(formikProps.values.index).toEqual([{ label: EXISTING_INDEX }]);
+      expect(formikProps.errors.index).toBeUndefined();
+    });
   });
 });
