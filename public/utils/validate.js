@@ -158,7 +158,34 @@ export const validateDetector = (detectorId, selectedDetector) => {
     return 'Must choose detector which has features.';
 };
 
-export const validateIndex = (options) => {
+/**
+ * Wazuh: an index name resolves to more than one index when it uses a wildcard
+ * (`*`, `?`), date math (`<index-{now/d}>`) or `_all`. Those characters are not
+ * allowed in a concrete index name, so they are the only pattern forms that can
+ * be typed here.
+ */
+export function containsIndexPatternSyntax(indexName) {
+  if (!indexName || indexName === '_all') return true;
+  if (indexName.startsWith('<') && indexName.endsWith('>')) return true; // Date math
+  return indexName.includes('*') || indexName.includes('?');
+}
+
+/**
+ * Wazuh: monitor types the backend handles as document level monitors, which do
+ * not accept index patterns.
+ */
+const MONITOR_TYPES_WITHOUT_INDEX_PATTERN_SUPPORT = [
+  MONITOR_TYPE.DOC_LEVEL,
+  MONITOR_TYPE.ACTIVE_RESPONSE,
+];
+
+export const supportsIndexPatterns = (monitorType) =>
+  !MONITOR_TYPES_WITHOUT_INDEX_PATTERN_SUPPORT.includes(monitorType);
+
+export const DOC_LEVEL_INDEX_PATTERN_ERROR =
+  'Index patterns are not supported for document level monitors. Select a single index instead of a wildcard (*) or date math pattern.';
+
+export const validateIndex = (options, monitorType) => {
   if (!Array.isArray(options)) return 'Must specify an index.';
   if (!options.length) return 'Must specify an index.';
 
@@ -167,7 +194,22 @@ export const validateIndex = (options) => {
   if (!isIndexPatternQueryValid(pattern, ILLEGAL_CHARACTERS)) {
     return `One of your inputs contains invalid characters or spaces. Please omit: ${illegalCharacters}`;
   }
+
+  // Wazuh: fail fast on index patterns the backend rejects for document level monitors.
+  if (
+    !supportsIndexPatterns(monitorType) &&
+    options.some(({ value, label }) => containsIndexPatternSyntax(value || label))
+  ) {
+    return DOC_LEVEL_INDEX_PATTERN_ERROR;
+  }
 };
+
+/**
+ * Wazuh: builds a Formik field-level validator bound to the monitor type, so the
+ * index restrictions of document level monitors are enforced in the form.
+ */
+export const validateMonitorIndex = (monitorType) => (options) =>
+  validateIndex(options, monitorType);
 
 // Wazuh: an index belongs to the Wazuh findings indices when it starts with the findings prefix.
 export const isActiveResponseFindingsIndex = (label = '') =>
@@ -183,6 +225,8 @@ export const isActiveResponseFindingsIndex = (label = '') =>
  * matched against the options the index field shows, which only hold the last search results.
  */
 export const validateActiveResponseIndex = (indexExists) => async (options) => {
+  // The findings and pattern messages below are more actionable than the generic document level
+  // one, so the monitor type is deliberately not passed here.
   const genericError = validateIndex(options);
   if (genericError) return genericError;
 

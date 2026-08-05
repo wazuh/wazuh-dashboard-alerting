@@ -13,8 +13,9 @@ import {
   hasError,
   isActiveResponseFindingsIndex,
   isInvalid,
+  supportsIndexPatterns,
   validateActiveResponseIndex,
-  validateIndex,
+  validateMonitorIndex,
 } from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
 import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
@@ -339,11 +340,18 @@ class MonitorIndex extends React.Component {
         .filter((group) => group.options.length > 0);
     }
 
+    // Wazuh: document level monitors are rejected by the backend when the index is a
+    // pattern, so the help text must not advertise wildcards or date math for them.
+    const indexHelpText = supportsIndexPatterns(this.props.monitorType)
+      ? 'You can use a * as a wildcard or date math index resolution in your index pattern'
+      : 'Document level monitors do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.';
+
     // Wazuh: a typed index bypasses the options list, so Active Response monitors validate that the
-    // selected value is an existing findings index.
-    const validateMonitorIndex = isActiveResponse
+    // selected value is an existing findings index. The rest of the monitor types only need the
+    // restrictions that come with the monitor type, index patterns among them.
+    const indexValidator = isActiveResponse
       ? validateActiveResponseIndex(this.indexExists)
-      : validateIndex;
+      : validateMonitorIndex(this.props.monitorType);
 
     let supportMultipleIndices = true;
     let supportsCrossClusterMonitoring = false;
@@ -369,11 +377,10 @@ class MonitorIndex extends React.Component {
           <FormikComboBox
             name="index"
             formRow
-            fieldProps={{ validate: validateMonitorIndex }}
+            fieldProps={{ validate: indexValidator }}
             rowProps={{
               label: 'Index',
-              helpText:
-                'You can use a * as a wildcard or date math index resolution in your index pattern',
+              helpText: indexHelpText,
               isInvalid,
               error: hasError,
               style: { paddingLeft: '10px' },
