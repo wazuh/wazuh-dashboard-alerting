@@ -9,7 +9,14 @@ import _ from 'lodash';
 import { EuiHealth, EuiHighlight } from '@elastic/eui';
 
 import { FormikComboBox } from '../../../../components/FormControls';
-import { validateIndex, hasError, isInvalid } from '../../../../utils/validate';
+import {
+  hasError,
+  isActiveResponseFindingsIndex,
+  isInvalid,
+  supportsIndexPatterns,
+  validateActiveResponseIndex,
+  validateMonitorIndex,
+} from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
 import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
 import CrossClusterConfiguration from '../../components/CrossClusterConfigurations/containers';
@@ -46,6 +53,14 @@ class MonitorIndex extends React.Component {
   constructor(props) {
     super(props);
     this.lastQuery = null;
+    // Wazuh: text currently typed in the combo box search input, kept so it can be applied on blur.
+    this.searchValue = '';
+    // Wazuh: combo box instance, used to reset its search input once the typed text is applied.
+    this.comboBox = null;
+    this.setComboBoxRef = (comboBox) => (this.comboBox = comboBox);
+    // Wazuh: every index, data stream and alias the searches have resolved, so that validating one
+    // of them does not have to ask the cluster again.
+    this.resolvedIndices = new Set();
     this.state = {
       isLoading: false,
       appendedWildcard: false,
@@ -62,6 +77,7 @@ class MonitorIndex extends React.Component {
     this.onSearchChange = this.onSearchChange.bind(this);
     this.handleQueryIndices = this.handleQueryIndices.bind(this);
     this.handleQueryAliases = this.handleQueryAliases.bind(this);
+    this.indexExists = this.indexExists.bind(this);
     this.onFetch = this.onFetch.bind(this);
   }
 
@@ -72,28 +88,73 @@ class MonitorIndex extends React.Component {
   }
 
   componentDidMount() {
-    this.onSearchChange(this.getInitialSearchQuery());
+    // Wazuh: the search input starts empty, `onSearchChange` falls back to the initial query.
+    this.onSearchChange('');
   }
 
   componentDidUpdate(prevProps) {
     if (isDataSourceChanged(prevProps, this.props)) {
-      this.onSearchChange(this.getInitialSearchQuery());
+      this.onSearchChange('');
     }
   }
 
   onCreateOption(searchValue, selectedOptions, setFieldValue, supportMultipleIndices) {
-    const normalizedSearchValue = searchValue.trim().toLowerCase();
+    const newOption = { label: searchValue.trim() };
 
-    if (!normalizedSearchValue) return;
+    if (!newOption.label) return;
 
-    const newOption = { label: searchValue };
-    if (supportMultipleIndices) setFieldValue('index', selectedOptions.concat(newOption));
-    else setFieldValue('index', [newOption]);
+    // Wazuh: the monitor form does not validate on change, so validation is requested explicitly.
+    // Otherwise the error of the index being replaced stays on screen until the next interaction.
+    if (supportMultipleIndices) setFieldValue('index', selectedOptions.concat(newOption), true);
+    else setFieldValue('index', [newOption], true);
+  }
+
+  /**
+   * Wazuh: apply the text left in the search input when the combo box loses focus.
+   *
+   * The combo box only turns typed text into a selection on blur while none of its options is
+   * active, and single selection pickers (Active Response and per document monitors) keep an
+   * option active once one is selected, which silently discarded the typed index.
+   *
+   * @returns {boolean} whether the typed text was applied.
+   */
+  commitPendingSearchValue(selectedOptions, form, supportMultipleIndices) {
+    if (!this.searchValue.trim()) return false;
+
+    this.onCreateOption(
+      this.searchValue,
+      selectedOptions,
+      form.setFieldValue,
+      supportMultipleIndices
+    );
+
+    // Reset the search input, otherwise the combo box keeps rendering the typed text as invalid
+    // instead of the index that was just applied.
+    if (this.comboBox?.clearSearchValue) this.comboBox.clearSearchValue();
+    else this.searchValue = '';
+
+    return true;
+  }
+
+  /**
+   * Wazuh: whether an index can be monitored, i.e. whether it resolves to an index, a data stream
+   * or an alias. Used to validate an index that was typed instead of picked from the options.
+   */
+  async indexExists(index) {
+    if (this.resolvedIndices.has(index)) return true;
+
+    const { indices, dataStreamAliases } = await this.handleQueryIndices(index);
+    if (indices.length || dataStreamAliases.length) return true;
+
+    return (await this.handleQueryAliases(index)).length > 0;
   }
 
   async onSearchChange(searchValue) {
     const { appendedWildcard } = this.state;
-    let query = searchValue;
+    this.searchValue = searchValue;
+    // Wazuh: the combo box clears its search input after applying a value. Falling back to the
+    // initial query keeps the index options list populated instead of emptying it.
+    let query = searchValue || this.getInitialSearchQuery();
     if (query.length === 1 && canAppendWildcard(query)) {
       query += '*';
       this.setState({ appendedWildcard: true });
@@ -103,6 +164,10 @@ class MonitorIndex extends React.Component {
         this.setState({ appendedWildcard: false });
       }
     }
+
+    // Wazuh: resetting the search input asks for the same query again, and it is reset twice per
+    // applied index, once by this component and once by the combo box itself.
+    if (query === this.lastQuery) return;
 
     this.lastQuery = query;
     this.setState({ query, showingIndexPatternQueryErrors: !!query.length });
@@ -148,9 +213,11 @@ class MonitorIndex extends React.Component {
             if (!dataStreamsSet.has(dsName)) {
               dataStreamsSet.add(dsName);
               dataStreamAliases.push({ label: dsName });
+              this.resolvedIndices.add(dsName); // Wazuh
             }
           } else {
             indices.push({ label: idx, health, status });
+            this.resolvedIndices.add(idx); // Wazuh
           }
         });
 
@@ -186,6 +253,7 @@ class MonitorIndex extends React.Component {
 
       if (response.ok) {
         const indices = response.resp.map(({ alias, index }) => ({ label: alias, index }));
+        indices.forEach(({ label }) => this.resolvedIndices.add(label)); // Wazuh
         return _.sortBy(indices, 'label');
       }
       return [];
@@ -262,12 +330,28 @@ class MonitorIndex extends React.Component {
     );
 
     // Wazuh: restrict index options to findings indices for Active Response monitors
-    if (this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE) {
-      const isFindingsIndex = (o) => o.label.startsWith('wazuh-findings');
+    const isActiveResponse = this.props.monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
+    if (isActiveResponse) {
       visibleOptions = visibleOptions
-        .map((group) => ({ ...group, options: group.options.filter(isFindingsIndex) }))
+        .map((group) => ({
+          ...group,
+          options: group.options.filter(({ label }) => isActiveResponseFindingsIndex(label)),
+        }))
         .filter((group) => group.options.length > 0);
     }
+
+    // Wazuh: document level monitors are rejected by the backend when the index is a
+    // pattern, so the help text must not advertise wildcards or date math for them.
+    const indexHelpText = supportsIndexPatterns(this.props.monitorType)
+      ? 'You can use a * as a wildcard or date math index resolution in your index pattern'
+      : 'Document level monitors do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.';
+
+    // Wazuh: a typed index bypasses the options list, so Active Response monitors validate that the
+    // selected value is an existing findings index. The rest of the monitor types only need the
+    // restrictions that come with the monitor type, index patterns among them.
+    const indexValidator = isActiveResponse
+      ? validateActiveResponseIndex(this.indexExists)
+      : validateMonitorIndex(this.props.monitorType);
 
     let supportMultipleIndices = true;
     let supportsCrossClusterMonitoring = false;
@@ -293,11 +377,10 @@ class MonitorIndex extends React.Component {
           <FormikComboBox
             name="index"
             formRow
-            fieldProps={{ validate: validateIndex }}
+            fieldProps={{ validate: indexValidator }}
             rowProps={{
               label: 'Index',
-              helpText:
-                'You can use a * as a wildcard or date math index resolution in your index pattern',
+              helpText: indexHelpText,
               isInvalid,
               error: hasError,
               style: { paddingLeft: '10px' },
@@ -307,11 +390,24 @@ class MonitorIndex extends React.Component {
               async: true,
               isLoading,
               options: visibleOptions,
+              comboBoxRef: this.setComboBoxRef,
               onBlur: (e, field, form) => {
-                form.setFieldTouched('index', true);
+                // Wazuh: apply the typed index, the combo box does not always do it.
+                const applied = this.commitPendingSearchValue(
+                  field.value,
+                  form,
+                  supportMultipleIndices
+                );
+                // Wazuh: `setFieldTouched` validates the value the form had when this handler
+                // started, so validating here after applying a value would bring the error of the
+                // previous value back until the next interaction. The value applied above asks for
+                // validation itself.
+                form.setFieldTouched('index', true, !applied);
               },
               onChange: (options, field, form) => {
-                form.setFieldValue('index', options);
+                // Wazuh: the form does not validate on change, so picking an index from the options
+                // would otherwise keep the error of the index it replaces until the next blur.
+                form.setFieldValue('index', options, true);
               },
               onCreateOption: (value, field, form) => {
                 this.onCreateOption(value, field.value, form.setFieldValue, supportMultipleIndices);
