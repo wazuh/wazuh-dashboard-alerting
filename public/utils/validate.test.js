@@ -13,9 +13,14 @@ import {
   validateMonthlyDay,
   ILLEGAL_CHARACTERS,
   validateIndex,
+  validateMonitorIndex,
+  supportsIndexPatterns,
+  containsIndexPatternSyntax,
+  DOC_LEVEL_INDEX_PATTERN_ERROR,
   isIndexPatternQueryValid,
   requiredNumber,
 } from './validate';
+import { MONITOR_TYPE } from './constants';
 import { FORMIK_INITIAL_VALUES } from '../pages/CreateMonitor/containers/CreateMonitor/utils/constants';
 import { TRIGGER_TYPE } from '../pages/CreateTrigger/containers/CreateTrigger/utils/constants';
 
@@ -201,6 +206,68 @@ describe('validateIndex', () => {
     const illegalCharacters = ILLEGAL_CHARACTERS.join(' ');
     const invalidText = `One of your inputs contains invalid characters or spaces. Please omit: ${illegalCharacters}`;
     expect(validateIndex([{ label: 'valid- index$' }])).toBe(invalidText);
+  });
+
+  // Wazuh: document level monitors reject index patterns in the backend
+  test('returns error string if a doc level monitor uses an index pattern', () => {
+    [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].forEach((monitorType) => {
+      expect(validateIndex([{ label: 'wazuh-findings-v5-*' }], monitorType)).toBe(
+        DOC_LEVEL_INDEX_PATTERN_ERROR
+      );
+      expect(validateIndex([{ label: '<wazuh-alerts-{now/d}>' }], monitorType)).toBe(
+        DOC_LEVEL_INDEX_PATTERN_ERROR
+      );
+    });
+  });
+
+  test('returns undefined if a doc level monitor uses a concrete index', () => {
+    expect(
+      validateIndex([{ label: 'wazuh-findings-v5-000001' }], MONITOR_TYPE.DOC_LEVEL)
+    ).toBeUndefined();
+  });
+
+  test('allows index patterns for monitor types that support them', () => {
+    [MONITOR_TYPE.QUERY_LEVEL, MONITOR_TYPE.BUCKET_LEVEL, undefined].forEach((monitorType) => {
+      expect(validateIndex([{ label: 'wazuh-findings-v5-*' }], monitorType)).toBeUndefined();
+    });
+  });
+});
+
+describe('validateMonitorIndex', () => {
+  test('binds the monitor type to the validator', () => {
+    expect(validateMonitorIndex(MONITOR_TYPE.DOC_LEVEL)([{ label: 'wazuh-alerts-*' }])).toBe(
+      DOC_LEVEL_INDEX_PATTERN_ERROR
+    );
+    expect(
+      validateMonitorIndex(MONITOR_TYPE.QUERY_LEVEL)([{ label: 'wazuh-alerts-*' }])
+    ).toBeUndefined();
+  });
+});
+
+describe('supportsIndexPatterns', () => {
+  test('returns false only for doc level monitor types', () => {
+    expect(supportsIndexPatterns(MONITOR_TYPE.DOC_LEVEL)).toBe(false);
+    expect(supportsIndexPatterns(MONITOR_TYPE.ACTIVE_RESPONSE)).toBe(false);
+    expect(supportsIndexPatterns(MONITOR_TYPE.QUERY_LEVEL)).toBe(true);
+    expect(supportsIndexPatterns(MONITOR_TYPE.BUCKET_LEVEL)).toBe(true);
+    expect(supportsIndexPatterns(MONITOR_TYPE.CLUSTER_METRICS)).toBe(true);
+  });
+});
+
+describe('containsIndexPatternSyntax', () => {
+  test('returns true for wildcards, date math, _all and empty names', () => {
+    expect(containsIndexPatternSyntax('wazuh-findings-v5-*')).toBe(true);
+    expect(containsIndexPatternSyntax('wazuh-alerts-?')).toBe(true);
+    expect(containsIndexPatternSyntax('<wazuh-alerts-{now/d}>')).toBe(true);
+    expect(containsIndexPatternSyntax('_all')).toBe(true);
+    expect(containsIndexPatternSyntax('')).toBe(true);
+    expect(containsIndexPatternSyntax(undefined)).toBe(true);
+  });
+
+  test('returns false for a single index name', () => {
+    expect(containsIndexPatternSyntax('wazuh-findings-v5-000001')).toBe(false);
+    // Dots are valid in an index name, so they must not be flagged as a pattern
+    expect(containsIndexPatternSyntax('wazuh-alerts-4.x-2026.08.03')).toBe(false);
   });
 });
 
