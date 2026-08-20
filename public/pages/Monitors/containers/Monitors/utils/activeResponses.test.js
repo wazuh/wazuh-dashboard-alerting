@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import React from 'react';
+import { mount } from 'enzyme';
+
 import {
   getActiveResponseColumn,
   getMonitorActiveResponseIds,
@@ -13,7 +16,13 @@ import { DEFAULT_EMPTY_DATA, MONITOR_TYPE } from '../../../../../utils/constants
 
 const renderColumn = (item, names) => {
   const { render } = getActiveResponseColumn(names);
-  return render(item.item_type, item);
+  const rendered = render(item.item_type, item);
+  return typeof rendered === 'string' ? rendered : mount(<div>{rendered}</div>).text();
+};
+
+const renderBadges = (item, names) => {
+  const { render } = getActiveResponseColumn(names);
+  return mount(<div>{render(item.item_type, item)}</div>).find('EuiBadge');
 };
 
 const activeResponseMonitor = (destinationId) => ({
@@ -90,6 +99,14 @@ describe('Monitors/utils/activeResponses', () => {
 
     test('flags an active response that no longer exists', () => {
       expect(renderColumn(activeResponseMonitor('ar-1'), {})).toBe('ar-1 (not found)');
+      expect(renderBadges(activeResponseMonitor('ar-1'), {}).first().props().color).toBe('danger');
+    });
+
+    test('badges each response the monitor invokes', () => {
+      const badges = renderBadges(activeResponseMonitor('ar-1'), { 'ar-1': 'Block-IP' });
+
+      expect(badges).toHaveLength(1);
+      expect(badges.first().props().color).toBe('hollow');
     });
 
     test('does not apply to the other monitor types', () => {

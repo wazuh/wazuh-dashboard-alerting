@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { EuiBadge, EuiBadgeGroup } from '@elastic/eui';
 import {
   BACKEND_CHANNEL_TYPE,
   DEFAULT_EMPTY_DATA,
@@ -66,7 +67,15 @@ export const getActiveResponseColumn = (activeResponseNames = {}) => ({
     const ids = getMonitorActiveResponseIds(item.monitor);
     if (!ids.length) return NOT_APPLICABLE;
 
-    return ids.map((id) => activeResponseNames[id] || `${id} (not found)`).join(', ');
+    return (
+      <EuiBadgeGroup gutterSize="xs">
+        {ids.map((id) => (
+          <EuiBadge key={id} color={activeResponseNames[id] ? 'hollow' : 'danger'}>
+            {activeResponseNames[id] || `${id} (not found)`}
+          </EuiBadge>
+        ))}
+      </EuiBadgeGroup>
+    );
   },
 });
 
