@@ -31,7 +31,7 @@ const AddActionButton = ({
   const notificationHelpText = 'Send an alert to a channel.';
   const activeResponseHelpText = 'Run a command on the affected agent.';
   const notificationIcon = 'bell';
-  const activeResponseIcon = 'bolt';
+  const activeResponseIcon = 'console';
   const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const onClickNotification = () => {
     const actions = _.get(values, `${fieldPath}actions`, []);
