@@ -29,7 +29,7 @@ const AddActionButton = ({
   const buttonActiveResponseText = 'Add active response';
   // Telling someone and changing the state of a machine are different decisions
   const notificationHelpText = 'Send an alert to a channel.';
-  const activeResponseHelpText = 'Run a command on the affected agent.';
+  const activeResponseHelpText = 'Run a command on one or more agents.';
   const notificationIcon = 'bell';
   const activeResponseIcon = 'console';
   const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
