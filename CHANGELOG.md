@@ -5,7 +5,7 @@
 | Issue | Comment |
 | ----- | ------- |
 | [#13](https://github.com/wazuh/wazuh-dashboard-alerting/issues/13) | Added debounce to Document Level Query text inputs |
-| [#33](https://github.com/wazuh/wazuh-dashboard-alerting/pull/33) [#133](https://github.com/wazuh/wazuh-dashboard-alerting/issues/133) | Add "Active Response" monitor type |
+| [#33](https://github.com/wazuh/wazuh-dashboard-alerting/pull/33) [#133](https://github.com/wazuh/wazuh-dashboard-alerting/issues/133) [#147](https://github.com/wazuh/wazuh-dashboard-alerting/issues/147) | Add "Active Response" monitor type |
 
 ### Changed
 
