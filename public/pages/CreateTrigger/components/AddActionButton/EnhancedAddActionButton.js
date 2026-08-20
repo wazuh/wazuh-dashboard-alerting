@@ -5,7 +5,14 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { EuiButton, EuiSmallButtonEmpty, EuiPanel } from '@elastic/eui';
+import {
+  EuiButton,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiSmallButtonEmpty,
+  EuiPanel,
+  EuiText,
+} from '@elastic/eui';
 import { getInitialActionValues } from './enhanced-utils';
 import { MANAGED_CHANNEL_CATEGORY, MONITOR_TYPE } from '../../../../utils/constants';
 import './styles.scss';
@@ -20,6 +27,11 @@ const AddActionButton = ({
 }) => {
   const buttonNotificationText = 'Add notification';
   const buttonActiveResponseText = 'Add active response';
+  // Telling someone and changing the state of a machine are different decisions
+  const notificationHelpText = 'Send an alert to a channel.';
+  const activeResponseHelpText = 'Run a command on the affected agent.';
+  const notificationIcon = 'bell';
+  const activeResponseIcon = 'bolt';
   const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const onClickNotification = () => {
     const actions = _.get(values, `${fieldPath}actions`, []);
@@ -55,7 +67,7 @@ const AddActionButton = ({
     <EuiPanel paddingSize="none">
       <EuiSmallButtonEmpty
         onClick={onClickNotification}
-        iconType="plusInCircle"
+        iconType={notificationIcon}
         className="add-action-button__flyout-button"
       >
         {buttonNotificationText}
@@ -63,7 +75,7 @@ const AddActionButton = ({
       {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
         <EuiSmallButtonEmpty
           onClick={onClickActiveResponse}
-          iconType="plusInCircle"
+          iconType={activeResponseIcon}
           className="add-action-button__flyout-button"
         >
           {buttonActiveResponseText}
@@ -71,26 +83,40 @@ const AddActionButton = ({
       )}
     </EuiPanel>
   ) : (
-    <>
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          margin: '0 auto',
-          maxWidth: '500px',
-          justifyContent: 'center',
-        }}
-      >
-        <EuiButton fill={false} size={'s'} onClick={onClickNotification}>
+    <EuiFlexGroup
+      gutterSize="m"
+      justifyContent="center"
+      style={{ margin: '0 auto', maxWidth: '500px' }}
+    >
+      <EuiFlexItem grow={false}>
+        <EuiButton
+          fill={false}
+          size={'s'}
+          iconType={notificationIcon}
+          onClick={onClickNotification}
+        >
           {buttonNotificationText}
         </EuiButton>
-        {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
-          <EuiButton fill={false} size={'s'} onClick={onClickActiveResponse}>
+        <EuiText size="xs" color="subdued" textAlign="center">
+          {notificationHelpText}
+        </EuiText>
+      </EuiFlexItem>
+      {monitorType === MONITOR_TYPE.ACTIVE_RESPONSE && (
+        <EuiFlexItem grow={false}>
+          <EuiButton
+            fill={false}
+            size={'s'}
+            iconType={activeResponseIcon}
+            onClick={onClickActiveResponse}
+          >
             {buttonActiveResponseText}
           </EuiButton>
-        )}
-      </div>
-    </>
+          <EuiText size="xs" color="subdued" textAlign="center">
+            {activeResponseHelpText}
+          </EuiText>
+        </EuiFlexItem>
+      )}
+    </EuiFlexGroup>
   );
 };
 
