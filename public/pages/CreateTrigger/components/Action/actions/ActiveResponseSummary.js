@@ -4,14 +4,13 @@
  */
 
 import React from 'react';
-import { EuiCallOut, EuiDescriptionList, EuiLink, EuiPanel, EuiSpacer } from '@elastic/eui';
+import { EuiCallOut, EuiLink, EuiSpacer } from '@elastic/eui';
+import Ribbon from '../../../../../components/Ribbon';
 import { MANAGED_CHANNEL_CATEGORY } from '../../../../../utils/constants';
 import { getManageChannelsUrl } from '../../../../../utils/helpers';
 import {
-  ACTION_FIELD_WIDTH,
   ACTIVE_RESPONSE_LOCATION,
   ACTIVE_RESPONSE_LOCATION_LABEL,
-  ACTIVE_RESPONSE_SUMMARY_TITLE_WIDTH,
   ACTIVE_RESPONSE_TYPE,
   ACTIVE_RESPONSE_TYPE_LABEL,
 } from '../utils/constants';
@@ -40,7 +39,7 @@ const ActiveResponseSummary = ({ selectedDestination }) => {
   const targetsEveryAgent = location === ACTIVE_RESPONSE_LOCATION.ALL;
 
   return (
-    <div style={{ maxWidth: ACTION_FIELD_WIDTH }}>
+    <div>
       {targetsEveryAgent && (
         <>
           <EuiCallOut
@@ -71,25 +70,25 @@ const ActiveResponseSummary = ({ selectedDestination }) => {
           <EuiSpacer size="s" />
         </>
       )}
-      <EuiPanel color="subdued" paddingSize="m">
-        <EuiDescriptionList
-          compressed
-          type="responsiveColumn"
-          titleProps={{ style: { width: ACTIVE_RESPONSE_SUMMARY_TITLE_WIDTH } }}
-          listItems={[
-            ...(description ? [{ title: 'Description', description }] : []),
-            {
-              title: 'Executable',
-              description: [executable, extraArgs].filter(Boolean).join(' ') || '-',
-            },
-            { title: 'Type', description: getActiveResponseTypeDescription(activeResponse) },
-            {
-              title: 'Location',
-              description: getActiveResponseLocationDescription(activeResponse),
-            },
-          ]}
-        />
-      </EuiPanel>
+      <Ribbon
+        data-test-subj="activeResponseSummary"
+        items={[
+          ...(description
+            ? [{ key: 'description', label: 'Description', value: description }]
+            : []),
+          {
+            key: 'executable',
+            label: 'Executable',
+            value: [executable, extraArgs].filter(Boolean).join(' '),
+          },
+          { key: 'type', label: 'Type', value: getActiveResponseTypeDescription(activeResponse) },
+          {
+            key: 'location',
+            label: 'Location',
+            value: getActiveResponseLocationDescription(activeResponse),
+          },
+        ]}
+      />
     </div>
   );
 };

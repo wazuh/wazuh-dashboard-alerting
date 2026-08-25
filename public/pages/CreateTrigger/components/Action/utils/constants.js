@@ -3,12 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*
- * Every field in the action panel, and the summary of the selected active response, share one
- * measure so the panel reads as a single column. 400px is the width OUI gives a form control.
- */
+// 400px is the width OUI gives a form control, which every field in the action panel shares
 export const ACTION_FIELD_WIDTH = 400;
-export const ACTIVE_RESPONSE_SUMMARY_TITLE_WIDTH = '35%';
 
 // The configuration of an active response, as the notifications plugin stores it
 export const ACTIVE_RESPONSE_LOCATION = Object.freeze({

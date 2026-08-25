@@ -1,0 +1,9 @@
+.ribbon-item .euiStat .euiText {
+  font-size: 12px;
+}
+
+@media (max-width: 767px) {
+  .ribbon-item {
+    max-width: none !important;
+  }
+}
