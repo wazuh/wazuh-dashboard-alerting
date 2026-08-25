@@ -16,7 +16,9 @@ import {
   validateMonitorIndex,
   supportsIndexPatterns,
   containsIndexPatternSyntax,
-  DOC_LEVEL_INDEX_PATTERN_ERROR,
+  getIndexPatternError,
+  validateActiveResponseInterval,
+  validateActiveResponseUnit,
   isIndexPatternQueryValid,
   requiredNumber,
 } from './validate';
@@ -212,10 +214,10 @@ describe('validateIndex', () => {
   test('returns error string if a doc level monitor uses an index pattern', () => {
     [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].forEach((monitorType) => {
       expect(validateIndex([{ label: 'wazuh-findings-v5-*' }], monitorType)).toBe(
-        DOC_LEVEL_INDEX_PATTERN_ERROR
+        getIndexPatternError(monitorType)
       );
       expect(validateIndex([{ label: '<wazuh-alerts-{now/d}>' }], monitorType)).toBe(
-        DOC_LEVEL_INDEX_PATTERN_ERROR
+        getIndexPatternError(monitorType)
       );
     });
   });
@@ -236,7 +238,7 @@ describe('validateIndex', () => {
 describe('validateMonitorIndex', () => {
   test('binds the monitor type to the validator', () => {
     expect(validateMonitorIndex(MONITOR_TYPE.DOC_LEVEL)([{ label: 'wazuh-alerts-*' }])).toBe(
-      DOC_LEVEL_INDEX_PATTERN_ERROR
+      getIndexPatternError(MONITOR_TYPE.DOC_LEVEL)
     );
     expect(
       validateMonitorIndex(MONITOR_TYPE.QUERY_LEVEL)([{ label: 'wazuh-alerts-*' }])
@@ -302,5 +304,45 @@ describe('requiredNumber', () => {
 
   test('returns error text for null value', () => {
     expect(requiredNumber(null)).toBe('Requires numerical value.');
+  });
+});
+
+// Wazuh: Active Response monitors run at most once per minute
+describe('validateActiveResponseInterval', () => {
+  test('caps the interval at 60 seconds', () => {
+    expect(validateActiveResponseInterval('SECONDS')(1)).toBeUndefined();
+    expect(validateActiveResponseInterval('SECONDS')(60)).toBeUndefined();
+    expect(validateActiveResponseInterval('SECONDS')(61)).toBe(
+      'Must be between 1 and 60 seconds.'
+    );
+  });
+
+  test('allows a single minute, and nothing longer', () => {
+    expect(validateActiveResponseInterval('MINUTES')(1)).toBeUndefined();
+    expect(validateActiveResponseInterval('MINUTES')(2)).toBe(
+      'Must be between 1 and 1 minutes.'
+    );
+  });
+
+  test('rejects non positive integers', () => {
+    [0, -1, 1.5, undefined].forEach((value) => {
+      expect(validateActiveResponseInterval('SECONDS')(value)).toBe(
+        'Must be between 1 and 60 seconds.'
+      );
+    });
+  });
+
+  test('rejects a unit the schedule cannot be expressed in', () => {
+    expect(validateActiveResponseInterval('HOURS')(1)).toBe(
+      'Must be one of seconds, minutes.'
+    );
+  });
+});
+
+describe('validateActiveResponseUnit', () => {
+  test('accepts seconds and minutes only', () => {
+    expect(validateActiveResponseUnit('SECONDS')).toBeUndefined();
+    expect(validateActiveResponseUnit('MINUTES')).toBeUndefined();
+    expect(validateActiveResponseUnit('DAYS')).toBe('Must be one of seconds, minutes.');
   });
 });

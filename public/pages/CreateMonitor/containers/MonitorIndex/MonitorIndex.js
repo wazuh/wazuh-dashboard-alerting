@@ -18,7 +18,11 @@ import {
   validateMonitorIndex,
 } from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
-import { ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN, MONITOR_TYPE } from '../../../../utils/constants';
+import {
+  ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN,
+  MONITOR_TYPE,
+  MONITOR_TYPE_LABEL,
+} from '../../../../utils/constants';
 import CrossClusterConfiguration from '../../components/CrossClusterConfigurations/containers';
 import {
   getDataSourceQueryObj,
@@ -340,11 +344,13 @@ class MonitorIndex extends React.Component {
         .filter((group) => group.options.length > 0);
     }
 
-    // Wazuh: document level monitors are rejected by the backend when the index is a
-    // pattern, so the help text must not advertise wildcards or date math for them.
+    // Wazuh: document level and Active Response monitors are rejected by the backend when the index
+    // is a pattern, so the help text must not advertise wildcards or date math for them.
     const indexHelpText = supportsIndexPatterns(this.props.monitorType)
       ? 'You can use a * as a wildcard or date math index resolution in your index pattern'
-      : 'Document level monitors do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.';
+      : `${_.upperFirst(
+          MONITOR_TYPE_LABEL[this.props.monitorType]
+        )} do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.`;
 
     // Wazuh: a typed index bypasses the options list, so Active Response monitors validate that the
     // selected value is an existing findings index. The rest of the monitor types only need the

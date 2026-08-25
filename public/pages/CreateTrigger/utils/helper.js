@@ -5,7 +5,7 @@
 
 import _ from 'lodash';
 import { DESTINATION_TYPE } from '../../Destinations/utils/constants';
-import { BACKEND_CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
+import { BACKEND_CHANNEL_TYPE, CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
 import { FORMIK_INITIAL_VALUES } from '../../CreateMonitor/containers/CreateMonitor/utils/constants';
 import {
   API_TYPES,

@@ -18,6 +18,7 @@ export default function (services, router, dataSourceEnabled) {
     state: schema.string(),
     monitorIds: schema.maybe(schema.any()),
     excludeOwner: schema.maybe(schema.string()), // Wazuh: param to optionally exclude monitors by owner
+    monitorType: schema.maybe(schema.string()), // Wazuh: param to optionally filter monitors by type
   };
 
   router.get(

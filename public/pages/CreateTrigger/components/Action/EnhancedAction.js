@@ -1,5 +1,5 @@
 /*
- * Copyright OpenSearch Contributors
+ * Copyright Wazuh Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,8 +7,9 @@ import React, { useState, useMemo } from 'react';
 import _ from 'lodash';
 import {
   EuiAccordion,
+  EuiBadge,
+  EuiCompressedFormRow,
   EuiSmallButton,
-  EuiButton,
   EuiHorizontalRule,
   EuiPanel,
   EuiSpacer,
@@ -38,6 +39,70 @@ import MinimalAccordion from '../../../../components/FeatureAnywhereContextMenu/
 import { getActionTypeFromAction, getManageChannelsUrl } from '../../../../utils/helpers';
 import { MANAGED_CHANNEL_CATEGORY } from '../../../../utils/constants';
 import { isManagedChannelType } from '../../../../services/utils/helper';
+import {
+  ACTION_FIELD_WIDTH,
+  ACTIVE_RESPONSE_LOCATION,
+  ACTIVE_RESPONSE_LOCATION_LABEL,
+  ACTIVE_RESPONSE_TYPE_LABEL,
+} from './utils/constants';
+
+/*
+ * EuiComboBox renders its list with a fixed row height, so anything taller than rowHeight
+ * is cut off by the next row. The active response row is built from these fixed pieces and its
+ * height is derived from them. The badges are laid out with flex, not as inline blocks, so they
+ * do not leak below the text baseline.
+ */
+const OPTION_NAME_HEIGHT = 20;
+const OPTION_BADGES_HEIGHT = 20; // an EuiBadge is 18px of line height plus its 1px borders
+const OPTION_LINE_GAP = 6;
+const OPTION_VERTICAL_SPACE = 9; // the row's 4px + 4px padding and its 1px bottom border
+const OPTION_BREATHING_ROOM = 6;
+const ACTIVE_RESPONSE_ROW_HEIGHT =
+  OPTION_NAME_HEIGHT +
+  OPTION_LINE_GAP +
+  OPTION_BADGES_HEIGHT +
+  OPTION_VERTICAL_SPACE +
+  OPTION_BREATHING_ROOM;
+const CHANNEL_ROW_HEIGHT = 46;
+
+// An active response is only safe to arm once its target and mute state are visible
+const renderActiveResponseOption = ({ label, isEnabled, activeResponse = {} }) => {
+  const { type, location } = activeResponse;
+  const locationLabel = ACTIVE_RESPONSE_LOCATION_LABEL[location];
+  const typeLabel = ACTIVE_RESPONSE_TYPE_LABEL[type];
+  const badges = [
+    locationLabel && {
+      label: locationLabel,
+      color: location === ACTIVE_RESPONSE_LOCATION.ALL ? 'warning' : 'default',
+    },
+    typeLabel && { label: typeLabel, color: 'default' },
+    isEnabled === false && { label: 'Muted · will not run', color: 'danger' },
+  ].filter(Boolean);
+
+  return (
+    <div style={{ width: '100%', overflow: 'hidden' }}>
+      <div className="eui-textTruncate" style={{ lineHeight: `${OPTION_NAME_HEIGHT}px` }}>
+        {label}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          height: `${OPTION_BADGES_HEIGHT}px`,
+          marginTop: `${OPTION_LINE_GAP}px`,
+          overflow: 'hidden',
+        }}
+      >
+        {badges.map(({ label: badgeLabel, color }) => (
+          <EuiBadge key={badgeLabel} color={color} style={{ flex: '0 0 auto' }}>
+            {badgeLabel}
+          </EuiBadge>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const Action = ({
   action,
@@ -59,10 +124,9 @@ const Action = ({
 }) => {
   const [backupValues, setBackupValues] = useState();
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
-  const ManageButton = useMemo(
-    () => (flyoutMode ? EuiSmallButtonEmpty : EuiSmallButton),
-    [flyoutMode]
-  );
+  const ManageButton = useMemo(() => (flyoutMode ? EuiSmallButtonEmpty : EuiSmallButton), [
+    flyoutMode,
+  ]);
   const Accordion = useMemo(() => (flyoutMode ? MinimalAccordion : EuiAccordion), [flyoutMode]);
   const [loadingDestinations, setLoadingDestinations] = useState(false);
   const selectedDestination = flattenedDestinations.filter(
@@ -71,10 +135,12 @@ const Action = ({
   const type = _.get(selectedDestination, '0.type', DEFAULT_ACTION_TYPE);
 
   const actionType = getActionTypeFromAction(action);
+  const isActiveResponse = actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE;
   const { name } = action;
   let ActionComponent;
   const actionLabelNotification = 'Notification';
-  const actionLabelActiveResponse = 'Active Response';
+  const actionLabelActiveResponse = 'Active response';
+  const actionLabelText = isActiveResponse ? actionLabelActiveResponse : actionLabelNotification;
 
   if (actionType === MANAGED_CHANNEL_CATEGORY.NOTIFICATION) {
     if (type === 'webhook') {
@@ -82,7 +148,7 @@ const Action = ({
     } else {
       ActionComponent = defaultNotificationActionMessageComponent;
     }
-  } else if (actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE) {
+  } else if (isActiveResponse) {
     // Wazuh: active response action type
     ActionComponent = activeResponseActionMessageComponent;
   }
@@ -139,28 +205,34 @@ const Action = ({
       placeHolderText = 'Select channel to notify';
       dropdownLabelText = 'Channel';
       options = destinations.filter((dest) => !isManagedChannelType(dest.key));
-    } else if (actionType === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE) {
+    } else if (isActiveResponse) {
       placeHolderText = 'Select active response to execute';
       dropdownLabelText = 'Active response';
-      options = destinations.filter(
-        (dest) => dest.key === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE
-      );
+      // The list holds nothing but active responses, so its group heading would only add an
+      // empty row as tall as a real option
+      options = destinations
+        .filter((dest) => dest.key === MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE)
+        .flatMap((group) => group.options);
     }
     return (
       <div>
-        <EuiFlexGroup wrap>
-          <EuiFlexItem style={{ maxWidth: 400 }}>
+        <EuiFlexGroup wrap alignItems="flexStart" gutterSize="s">
+          <EuiFlexItem grow={false} style={{ width: ACTION_FIELD_WIDTH }}>
             <FormikComboBox
               name={`${fieldPath}actions.${index}.destination_id`}
               formRow
-              fieldProps={{ validate: validateDestination(flattenedDestinations, flyoutMode) }}
+              fieldProps={{
+                validate: validateDestination(flattenedDestinations, flyoutMode, actionType),
+              }}
               rowProps={{
                 label: dropdownLabelText,
+                fullWidth: true,
                 isInvalid,
                 error: hasError,
               }}
               inputProps={{
                 placeholder: placeHolderText,
+                fullWidth: true,
                 options: options,
                 selectedOptions: selectedDestination,
                 isDisabled: !hasNotificationPlugin,
@@ -177,38 +249,38 @@ const Action = ({
                 },
                 onFocus: refreshDestinations,
                 singleSelection: { asPlainText: true },
-                isClearable: false,
+                isClearable: true,
                 'data-test-subj': 'channelComboBox',
-                renderOption: (option) => (
-                  <div style={{ lineHeight: '1' }}>
-                    <EuiText size="s">
-                      {option.label}
-                    </EuiText>
-                    {option.description && (
-                      <EuiText
-                        size="xs"
-                        color="subdued"
-                      >
-                        {option.description}
-                      </EuiText>
-                    )}
-                  </div>
-                ),
-                rowHeight: 46,
+                renderOption: (option) =>
+                  isActiveResponse ? (
+                    renderActiveResponseOption(option)
+                  ) : (
+                    <div style={{ lineHeight: '1' }}>
+                      <EuiText size="s">{option.label}</EuiText>
+                      {option.description && (
+                        <EuiText size="xs" color="subdued">
+                          {option.description}
+                        </EuiText>
+                      )}
+                    </div>
+                  ),
+                rowHeight: isActiveResponse ? ACTIVE_RESPONSE_ROW_HEIGHT : CHANNEL_ROW_HEIGHT,
                 isLoading: !flyoutMode && loadingDestinations,
               }}
             />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiSpacer size="l" />
-            <ManageButton
-              disabled={!hasNotificationPlugin}
-              iconType="popout"
-              iconSide="right"
-              onClick={() => window.open(getManageChannelsUrl(actionType))}
-            >
-              {actionType === 'notification' ? 'Manage channels' : 'Manage active responses'}
-            </ManageButton>
+            {/* The empty label keeps the button level with the input, whatever is below it */}
+            <EuiCompressedFormRow hasEmptyLabelSpace>
+              <ManageButton
+                disabled={!hasNotificationPlugin}
+                iconType="popout"
+                iconSide="right"
+                onClick={() => window.open(getManageChannelsUrl(actionType))}
+              >
+                {isActiveResponse ? 'Manage active responses' : 'Manage channels'}
+              </ManageButton>
+            </EuiCompressedFormRow>
           </EuiFlexItem>
         </EuiFlexGroup>
         <EuiSpacer size="m" />
@@ -234,7 +306,7 @@ const Action = ({
                   <EuiSmallButtonIcon
                     iconType="trash"
                     color="text"
-                    aria-label={`Delete Notification`}
+                    aria-label={`Delete ${actionLabelText.toLowerCase()} action`}
                     onClick={onDelete}
                   />
                 ),
@@ -246,19 +318,19 @@ const Action = ({
                 className: 'accordion-action',
                 buttonContent: (
                   <EuiText>
-                    {actionType === 'notification'
-                      ? !_.get(selectedDestination, '0.type', undefined)
-                        ? actionLabelNotification
-                        : `${actionLabelNotification}: ${name}`
-                      : !_.get(selectedDestination, '0.type', undefined)
-                      ? actionLabelActiveResponse
-                      : `${actionLabelActiveResponse}: ${name}`}
+                    {!_.get(selectedDestination, '0.type', undefined)
+                      ? actionLabelText
+                      : `${actionLabelText}: ${name}`}
                   </EuiText>
                 ),
                 extraAction: (
-                  <EuiButton color={'danger'} onClick={onDelete} size={'s'}>
-                    Remove action
-                  </EuiButton>
+                  // Matches the flyout variant instead of a full-size danger button
+                  <EuiSmallButtonIcon
+                    iconType="trash"
+                    color="text"
+                    aria-label={`Remove ${actionLabelText.toLowerCase()} action`}
+                    onClick={onDelete}
+                  />
                 ),
                 paddingSize: 's',
               })}
@@ -279,7 +351,6 @@ const Action = ({
                   }}
                   rowProps={{
                     label: 'Action name',
-                    helpText: 'Names can only contain letters, numbers, and special characters',
                     isInvalid,
                     error: hasError,
                   }}
@@ -297,6 +368,7 @@ const Action = ({
               <ActionComponent
                 action={action}
                 context={context}
+                selectedDestination={selectedDestination[0]}
                 index={index}
                 sendTestMessage={sendTestMessage}
                 setFlyout={setFlyout}
@@ -304,7 +376,7 @@ const Action = ({
                 values={values}
               />
             )}
-            {flyoutMode && !isInitialLoading && actionType === 'notification' && (
+            {flyoutMode && !isInitialLoading && !isActiveResponse && (
               <>
                 <EuiSmallButtonEmpty iconType="pencil" iconSide="left" onClick={onConfigureOpen}>
                   Configure

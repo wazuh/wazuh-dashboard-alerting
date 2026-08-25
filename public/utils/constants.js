@@ -44,6 +44,23 @@ export const ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX = 'wazuh-findings';
 // Wazuh: Index pattern for findings indices used by Active Response monitors
 export const ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN = `${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}*`;
 
+// Wazuh: monitor types that name themselves in the copy of the create monitor form
+export const MONITOR_TYPE_LABEL = Object.freeze({
+  [MONITOR_TYPE.DOC_LEVEL]: 'document level monitors',
+  [MONITOR_TYPE.ACTIVE_RESPONSE]: 'Active Response monitors',
+});
+
+/*
+ * Wazuh: the indexer rejects an Active Response monitor whose schedule is longer than 60 seconds
+ * ("Active response monitor schedule must be <= 60 seconds"), or that is not an interval schedule.
+ */
+export const ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS = 60;
+
+export const ACTIVE_RESPONSE_MAX_INTERVAL = Object.freeze({
+  SECONDS: ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS,
+  MINUTES: ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS / 60,
+});
+
 export const DESTINATION_ACTIONS = {
   UPDATE_DESTINATION: 'update-destination',
 };

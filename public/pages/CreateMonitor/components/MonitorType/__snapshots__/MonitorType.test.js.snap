@@ -317,7 +317,7 @@ Array [
             class="euiCheckableCard__label"
             for="activeResponseMonitorRadioCard"
           >
-            Active Response
+            Active Response monitor
           </label>
           <div
             class="euiCheckableCard__children"

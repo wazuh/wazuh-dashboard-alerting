@@ -21,9 +21,10 @@ const components = {
 };
 
 const FrequencyPicker = (props) => {
-  const type = props.formik.values.frequency;
-  const Component = components[type];
-  return <Component compressed />;
+  const { frequency, monitor_type: monitorType } = props.formik.values;
+  const Component = components[frequency];
+  // Wazuh: the interval limits depend on the monitor type
+  return <Component compressed monitorType={monitorType} />;
 };
 
 export default connect(FrequencyPicker);

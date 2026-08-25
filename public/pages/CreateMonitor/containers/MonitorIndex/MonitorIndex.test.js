@@ -176,16 +176,16 @@ describe('MonitorIndex', () => {
       );
     });
 
-    test.each([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE])(
-      'states the restriction for %s',
-      (monitorType) => {
-        const wrapper = getMountWrapper({ monitorType });
+    test.each([
+      [MONITOR_TYPE.DOC_LEVEL, 'Document level monitors'],
+      [MONITOR_TYPE.ACTIVE_RESPONSE, 'Active Response monitors'],
+    ])('states the restriction for %s', (monitorType, monitorTypeLabel) => {
+      const wrapper = getMountWrapper({ monitorType });
 
-        expect(wrapper.find('.euiFormHelpText').text()).toBe(
-          'Document level monitors do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.'
-        );
-      }
-    );
+      expect(wrapper.find('.euiFormHelpText').text()).toBe(
+        `${monitorTypeLabel} do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.`
+      );
+    });
   });
 
   test('sets option when calling onCreateOption', async () => {

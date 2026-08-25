@@ -20,6 +20,7 @@ import { FORMIK_INITIAL_VALUES } from './utils/constants';
 import { formikToMonitor } from './utils/formikToMonitor';
 import { MONITOR_TYPE, SEARCH_TYPE } from '../../../../utils/constants';
 import { SubmitErrorHandler } from '../../../../utils/SubmitErrorHandler';
+import { createToastTracker } from '../../../../utils/toastTracker'; // Wazuh
 import MonitorDetails from '../MonitorDetails';
 import ConfigureTriggers from '../../../CreateTrigger/containers/ConfigureTriggers';
 import ConfigureTriggersPpl from '../../../CreateTrigger/containers/ConfigureTriggers/ConfigureTriggersPpl';
@@ -51,6 +52,9 @@ export default class CreateMonitor extends Component {
     const { location, edit, monitorToEdit } = props;
     const initialValues = getInitialValues({ location, monitorToEdit, edit });
     initialValues.dataSourceEndpoint = props.dataSourceEndpoint || '';
+
+    // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
+    this.toastTracker = createToastTracker(props.notifications);
 
     this.state = {
       plugins: [],
@@ -152,7 +156,8 @@ export default class CreateMonitor extends Component {
   }
 
   onSubmit(values, formikBag) {
-    const { edit, history, updateMonitor, notifications, httpClient, monitorToEdit } = this.props;
+    const { edit, history, updateMonitor, httpClient, monitorToEdit } = this.props;
+    const { notifications } = this.toastTracker; // Wazuh
     const { triggerToEdit } = this.state;
 
     if (values.monitor_type === MONITOR_TYPE.PPL) {
@@ -190,6 +195,7 @@ export default class CreateMonitor extends Component {
 
   componentWillUnmount() {
     this.props.setFlyout(null);
+    this.toastTracker.removeAll(); // Wazuh
   }
 
   componentDidUpdate(prevProps) {
@@ -409,7 +415,7 @@ export default class CreateMonitor extends Component {
                   isSubmitting={isSubmitting}
                   isValid={isValid}
                   onSubmitError={() =>
-                    notifications.toasts.addDanger({
+                    this.toastTracker.notifications.toasts.addDanger({
                       title: `Failed to ${edit ? 'update' : 'create'} the monitor`,
                       text: 'Fix all highlighted error(s) before continuing.',
                     })

@@ -44,7 +44,9 @@ import {
   runPPLPreview,
   submitPPL,
   extractIndicesFromPPL,
-  findCommonDateFields,
+  // WAZUH
+  // findCommonDateFields,
+  findCommonDateFieldsWithDynamicTemplates,
   addTimeFilterToQuery,
   computeLookBackMinutes,
 } from './utils/pplAlertingHelpers';
@@ -245,7 +247,13 @@ class PplAlertingCreateMonitor extends Component {
     try {
       const dataSourceId = this.formikRef.current?.values?.dataSourceId || landingDataSourceId;
 
-      const { commonDateFields, error } = await findCommonDateFields(
+      // WAZUH
+      // const { commonDateFields, error } = await findCommonDateFields(
+      //   httpClient,
+      //   indices,
+      //   dataSourceId
+      // );
+      const { commonDateFields, error } = await findCommonDateFieldsWithDynamicTemplates(
         httpClient,
         indices,
         dataSourceId

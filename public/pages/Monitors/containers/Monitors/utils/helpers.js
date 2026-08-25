@@ -15,6 +15,7 @@ export function getURLQueryParams(location) {
     sortField = DEFAULT_QUERY_PARAMS.sortField,
     sortDirection = DEFAULT_QUERY_PARAMS.sortDirection,
     state = DEFAULT_QUERY_PARAMS.state,
+    monitorType = DEFAULT_QUERY_PARAMS.monitorType, // Wazuh
   } = queryString.parse(location.search);
 
   return {
@@ -24,6 +25,7 @@ export function getURLQueryParams(location) {
     sortField,
     sortDirection,
     state,
+    monitorType, // Wazuh
   };
 }
 
@@ -36,7 +38,7 @@ export function getItemLevelType(itemType) {
     case MONITOR_TYPE.CLUSTER_METRICS:
       return 'Per cluster metrics';
     case MONITOR_TYPE.ACTIVE_RESPONSE:
-      return 'Active Response';
+      return 'Active response'; // Wazuh: the sibling types read in sentence case
     case MONITOR_TYPE.DOC_LEVEL:
       return 'Per document';
     case MONITOR_TYPE.COMPOSITE_LEVEL:
