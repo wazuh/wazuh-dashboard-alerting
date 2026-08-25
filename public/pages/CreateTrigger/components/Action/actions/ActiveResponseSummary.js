@@ -75,9 +75,6 @@ const ActiveResponseSummary = ({ selectedDestination }) => {
       <Ribbon
         data-test-subj="activeResponseSummary"
         items={[
-          ...(description
-            ? [{ key: 'description', label: 'Description', value: description }]
-            : []),
           {
             key: 'executable',
             label: 'Executable',
@@ -89,6 +86,9 @@ const ActiveResponseSummary = ({ selectedDestination }) => {
             label: 'Location',
             value: getActiveResponseLocationDescription(activeResponse),
           },
+          ...(description
+            ? [{ key: 'description', label: 'Description', value: description }]
+            : []),
         ]}
       />
     </div>
