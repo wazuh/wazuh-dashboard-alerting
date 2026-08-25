@@ -5,7 +5,7 @@
 
 import _ from 'lodash';
 import { DESTINATION_TYPE } from '../../Destinations/utils/constants';
-import { BACKEND_CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
+import { BACKEND_CHANNEL_TYPE, CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
 import { FORMIK_INITIAL_VALUES } from '../../CreateMonitor/containers/CreateMonitor/utils/constants';
 import {
   API_TYPES,
@@ -27,7 +27,7 @@ export const getChannelOptions = (channels) => {
     if (!channelMap[channel.type]) {
       channelMap[channel.type] = {
         key: channel.type,
-        label: channel.type,
+        label: CHANNEL_TYPE[channel.type] || channel.type, // Wazuh: not the raw backend key
         options: []
       };
     }
