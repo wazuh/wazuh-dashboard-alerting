@@ -70,6 +70,8 @@ const ActiveResponseSummary = ({ selectedDestination }) => {
           <EuiSpacer size="s" />
         </>
       )}
+      {/* a callout above needs a little more room than the gap between two callouts */}
+      {(targetsEveryAgent || isMuted) && <EuiSpacer size="s" />}
       <Ribbon
         data-test-subj="activeResponseSummary"
         items={[
