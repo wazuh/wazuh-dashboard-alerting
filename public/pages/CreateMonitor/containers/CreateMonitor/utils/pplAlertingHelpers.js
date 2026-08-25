@@ -18,6 +18,8 @@ import {
 import { triggerToFormikPpl } from '../../../../CreateTrigger/containers/CreateTrigger/utils/triggerToFormikPpl';
 import { TRIGGER_TYPE } from '../../../../CreateTrigger/containers/CreateTrigger/utils/constants';
 import { getInitialTriggerValues } from '../../../../CreateTrigger/components/AddTriggerButton/utils';
+// WAZUH
+import { getPathsPerDataTypeWithDynamicTemplates } from '../../DefineMonitor/utils/mappings';
 import { AGGREGATION_TYPES } from '../../../components/MonitorExpressions/expressions/utils/constants';
 import { getDataSourceQueryObj } from '../../../../utils/helpers';
 
@@ -455,6 +457,67 @@ export const findCommonDateFields = async (httpClient, indices, dataSourceId) =>
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[findCommonDateFields] Error:', err);
+    return {
+      commonDateFields: [],
+      error: err?.body?.message || err?.message || 'Failed to fetch mappings',
+    };
+  }
+};
+
+// WAZUH
+/**
+ * Same as `findCommonDateFields`, reading the mappings with
+ * `getPathsPerDataTypeWithDynamicTemplates` so that the date fields declared only by a dynamic
+ * template — most of the schema of a Wazuh index — are found as well.
+ */
+export const findCommonDateFieldsWithDynamicTemplates = async (
+  httpClient,
+  indices,
+  dataSourceId
+) => {
+  if (!indices || indices.length === 0) {
+    return { commonDateFields: [], error: 'No indices specified' };
+  }
+
+  try {
+    const dataSourceQuery = getDataSourceQueryObj();
+    const query = { ...(dataSourceQuery?.query || {}) };
+    if (dataSourceId) query['dataSourceId'] = dataSourceId;
+
+    const resp = await httpClient.post('/api/alerting/_mappings', {
+      body: JSON.stringify({ index: indices }),
+      query,
+    });
+
+    if (!resp.ok) {
+      return { commonDateFields: [], error: resp.resp || 'Failed to fetch mappings' };
+    }
+
+    const mappings = resp.resp || {};
+
+    const dateFieldsByIndex = Object.entries(mappings).map(([indexName, indexMapping]) => {
+      const dataTypes = getPathsPerDataTypeWithDynamicTemplates({ [indexName]: indexMapping });
+      return new Set([...(dataTypes.date || []), ...(dataTypes.date_nanos || [])]);
+    });
+
+    if (dateFieldsByIndex.length === 0) {
+      return { commonDateFields: [], error: null };
+    }
+
+    const commonFields = Array.from(dateFieldsByIndex[0]).filter((field) =>
+      dateFieldsByIndex.every((fieldSet) => fieldSet.has(field))
+    );
+
+    commonFields.sort((a, b) => {
+      if (a === '@timestamp') return -1;
+      if (b === '@timestamp') return 1;
+      return a.localeCompare(b);
+    });
+
+    return { commonDateFields: commonFields, error: null };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[findCommonDateFieldsWithDynamicTemplates] Error:', err);
     return {
       commonDateFields: [],
       error: err?.body?.message || err?.message || 'Failed to fetch mappings',
