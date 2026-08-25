@@ -16,12 +16,15 @@ import './styles.scss';
  * It carries no panel of its own: it is meant to sit inside the one that already frames its
  * surroundings.
  */
+// The value keeps the same size as its label, as the agent summary ribbon does
+const FONT_SIZE = 12;
+
 const Ribbon = ({ items, 'data-test-subj': dataTestSubj }) => (
   <EuiFlexGroup data-test-subj={dataTestSubj} wrap justifyContent="spaceBetween">
     {items.map(({ key, label, value }) => (
       <EuiFlexItem key={key} grow={false} className="ribbon-item">
         <EuiStat
-          title={value ?? '-'}
+          title={<span style={{ fontSize: FONT_SIZE }}>{value ?? '-'}</span>}
           description={label}
           titleSize="xs"
           data-test-subj={`ribbon-item-${key}`}

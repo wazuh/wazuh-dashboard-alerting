@@ -26,6 +26,6 @@ describe('Ribbon', () => {
   test('falls back when an item has no value', () => {
     const wrapper = mount(<Ribbon items={[{ key: 'type', label: 'Type' }]} />);
 
-    expect(wrapper.find('EuiStat').first().props().title).toBe('-');
+    expect(wrapper.find('EuiStat').first().text()).toContain('-');
   });
 });
