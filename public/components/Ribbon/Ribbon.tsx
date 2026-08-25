@@ -4,9 +4,22 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import { EuiFlexGroup, EuiFlexItem, EuiStat } from '@elastic/eui';
 import './styles.scss';
+
+// The value keeps the same size as its label, as the agent summary ribbon does
+const FONT_SIZE = 12;
+
+export interface RibbonItem {
+  key: string;
+  label: React.ReactNode;
+  value?: React.ReactNode;
+}
+
+export interface RibbonProps {
+  items: RibbonItem[];
+  'data-test-subj'?: string;
+}
 
 /*
  * A row of read-only fields, each one a label over its value. Mirrors the ribbon the Wazuh
@@ -16,10 +29,7 @@ import './styles.scss';
  * It carries no panel of its own: it is meant to sit inside the one that already frames its
  * surroundings.
  */
-// The value keeps the same size as its label, as the agent summary ribbon does
-const FONT_SIZE = 12;
-
-const Ribbon = ({ items, 'data-test-subj': dataTestSubj }) => (
+const Ribbon = ({ items, 'data-test-subj': dataTestSubj }: RibbonProps) => (
   <EuiFlexGroup data-test-subj={dataTestSubj} wrap justifyContent="spaceBetween">
     {items.map(({ key, label, value }) => (
       <EuiFlexItem key={key} grow={false} className="ribbon-item">
@@ -33,15 +43,5 @@ const Ribbon = ({ items, 'data-test-subj': dataTestSubj }) => (
     ))}
   </EuiFlexGroup>
 );
-
-Ribbon.propTypes = {
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      label: PropTypes.node.isRequired,
-      value: PropTypes.node,
-    })
-  ).isRequired,
-};
 
 export default Ribbon;
