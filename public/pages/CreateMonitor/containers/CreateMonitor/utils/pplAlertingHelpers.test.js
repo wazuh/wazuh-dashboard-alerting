@@ -155,3 +155,56 @@ describe('formatDuration', () => {
     expect(formatDuration(null)).toBe('-');
   });
 });
+
+// WAZUH
+import { findCommonDateFieldsWithDynamicTemplates } from './pplAlertingHelpers';
+
+describe('findCommonDateFieldsWithDynamicTemplates', () => {
+  const httpClientWith = (mappings) => ({
+    post: jest.fn().mockResolvedValue({ ok: true, resp: mappings }),
+  });
+
+  test('finds the date fields declared by dynamic templates', async () => {
+    const httpClient = httpClientWith({
+      'wazuh-alerts': {
+        mappings: {
+          dynamic_templates: [
+            { wcs_timestamp: { path_match: '@timestamp', mapping: { type: 'date' } } },
+            { wcs_ingested: { path_match: 'event.ingested', mapping: { type: 'date_nanos' } } },
+            { wcs_agent_id: { path_match: 'agent.id', mapping: { type: 'keyword' } } },
+          ],
+        },
+      },
+    });
+    const { commonDateFields, error } = await findCommonDateFieldsWithDynamicTemplates(httpClient, [
+      'wazuh-alerts',
+    ]);
+    expect(error).toBeNull();
+    expect(commonDateFields).toEqual(['@timestamp', 'event.ingested']);
+  });
+
+  test('keeps only the date fields shared by every index', async () => {
+    const httpClient = httpClientWith({
+      first_index: {
+        mappings: {
+          properties: { '@timestamp': { type: 'date' } },
+          dynamic_templates: [
+            { wcs_ingested: { path_match: 'event.ingested', mapping: { type: 'date' } } },
+          ],
+        },
+      },
+      second_index: {
+        mappings: {
+          dynamic_templates: [
+            { wcs_timestamp: { path_match: '@timestamp', mapping: { type: 'date' } } },
+          ],
+        },
+      },
+    });
+    const { commonDateFields } = await findCommonDateFieldsWithDynamicTemplates(httpClient, [
+      'first_index',
+      'second_index',
+    ]);
+    expect(commonDateFields).toEqual(['@timestamp']);
+  });
+});

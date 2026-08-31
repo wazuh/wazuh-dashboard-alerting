@@ -194,7 +194,7 @@ const MonitorType = ({ values }) => (
           name="monitorTypeActiveResponse"
           inputProps={{
             id: 'activeResponseMonitorRadioCard',
-            label: 'Active Response',
+            label: 'Active Response monitor',
             checked: values.monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE,
             value: MONITOR_TYPE.ACTIVE_RESPONSE,
             onChange: (e, field, form) => onChangeDefinition(e, form),
