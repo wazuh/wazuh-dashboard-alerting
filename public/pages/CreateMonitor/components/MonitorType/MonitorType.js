@@ -94,8 +94,7 @@ const pplDescription = (
 // Wazuh: Add description for Active Response monitor type
 const activeResponseDescription = (
   <EuiText color={'subdued'} size={'xs'} style={{ paddingBottom: '10px', paddingTop: '0px' }}>
-    Active Response monitors trigger active responses when documents match the trigger
-    conditions.
+    Active Response monitors trigger active responses when documents match the trigger conditions.
   </EuiText>
 );
 

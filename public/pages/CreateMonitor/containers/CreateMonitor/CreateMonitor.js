@@ -59,6 +59,9 @@ export default class CreateMonitor extends Component {
     // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
     this.toastTracker = createToastTracker(props.notifications);
 
+    // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
+    this.toastTracker = createToastTracker(props.notifications);
+
     this.state = {
       plugins: [],
       response: null,
@@ -280,7 +283,16 @@ export default class CreateMonitor extends Component {
           validateOnChange={false}
           enableReinitialize={true}
         >
-          {({ values, errors, handleSubmit, isSubmitting, isValid, touched, setFieldValue, submitCount }) => {
+          {({
+            values,
+            errors,
+            handleSubmit,
+            isSubmitting,
+            isValid,
+            touched,
+            setFieldValue,
+            submitCount,
+          }) => {
             const isComposite = values.monitor_type === MONITOR_TYPE.COMPOSITE_LEVEL;
             const isPpl = values.monitor_type === MONITOR_TYPE.PPL;
 

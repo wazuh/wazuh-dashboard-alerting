@@ -428,7 +428,8 @@ class ConfigureTriggers extends React.Component {
   };
 
   render() {
-    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues, errors, submitCount } = this.props;
+    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues, errors, submitCount } =
+      this.props;
     const { ContentPanelStructure } = this.state;
     const monitorType = monitorValues.monitor_type;
     const isComposite = monitorType === MONITOR_TYPE.COMPOSITE_LEVEL;

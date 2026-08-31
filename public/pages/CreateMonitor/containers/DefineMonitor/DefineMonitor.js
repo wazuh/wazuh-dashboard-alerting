@@ -462,7 +462,11 @@ class DefineMonitor extends Component {
 
         // TODO FIXME: Doc level backend monitor run results don't include duration metrics. Using this for now.
         //  This returns a much longer duration than other monitors, though.
-        if (monitor_type === MONITOR_TYPE.DOC_LEVEL || monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE) { // Wazuh: Handle Active Response monitor type
+        if (
+          monitor_type === MONITOR_TYPE.DOC_LEVEL ||
+          monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE
+        ) {
+          // Wazuh: Handle Active Response monitor type
           let hitsCount = 0;
           _.keys(response).forEach(
             (resultKey) => (hitsCount += _.values(performanceResponse[resultKey]).length)
