@@ -37,6 +37,8 @@ exports[`Monitors renders 1`] = `
     <MonitorControls
       activePage={0}
       monitorActions={null}
+      monitorType="all"
+      onMonitorTypeChange={[Function]}
       onPageClick={[Function]}
       onSearchChange={[Function]}
       onStateChange={[Function]}
@@ -76,6 +78,12 @@ exports[`Monitors renders 1`] = `
               "truncateText": false,
             },
             Object {
+              "field": "item_type",
+              "name": "Active responses",
+              "render": [Function],
+              "truncateText": false,
+            },
+            Object {
               "field": "latestAlert",
               "name": "Latest alert",
               "sortable": false,
@@ -85,7 +93,7 @@ exports[`Monitors renders 1`] = `
             Object {
               "dataType": "date",
               "field": "lastNotificationTime",
-              "name": "Last notification time",
+              "name": "Last action time",
               "render": [Function],
               "sortable": true,
               "truncateText": false,

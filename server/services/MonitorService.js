@@ -262,7 +262,17 @@ export default class MonitorService extends MDSEnabledClientService {
 
   getMonitors = async (context, req, res) => {
     try {
-      const { from, size, search, sortDirection, sortField, state, monitorIds, excludeOwner } = req.query;
+      const {
+        from,
+        size,
+        search,
+        sortDirection,
+        sortField,
+        state,
+        monitorIds,
+        excludeOwner,
+        monitorType,
+      } = req.query;
 
       let must = { match_all: {} };
       if (search.trim()) {
@@ -298,6 +308,19 @@ export default class MonitorService extends MDSEnabledClientService {
         const enabled = state === 'enabled';
         should.push({ term: { 'monitor.enabled': enabled } });
         should.push({ term: { 'workflow.enabled': enabled } });
+      }
+
+      // Wazuh: filter by monitor type here, so the total and the pages match the rows
+      if (monitorType && monitorType !== 'all') {
+        mustList.push({
+          bool: {
+            should: [
+              { term: { 'monitor.monitor_type': monitorType } },
+              { term: { 'workflow.workflow_type': monitorType } },
+            ],
+            minimum_should_match: 1,
+          },
+        });
       }
 
       const monitorSorts = { name: 'monitor.name.keyword' };

@@ -30,7 +30,9 @@ import ExtractionQuery from '../../components/ExtractionQuery';
 import MonitorExpressions from '../../components/MonitorExpressions';
 import QueryPerformance from '../../components/QueryPerformance';
 import { formikToMonitor } from '../CreateMonitor/utils/formikToMonitor';
-import { getPathsPerDataType } from './utils/mappings';
+// WAZUH
+// import { getPathsPerDataType } from './utils/mappings';
+import { getPathsPerDataTypeWithDynamicTemplates } from './utils/mappings';
 import { buildRequest } from './utils/searchRequests';
 import { SEARCH_TYPE, OS_AD_PLUGIN, MONITOR_TYPE } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
@@ -58,7 +60,9 @@ import { AlertingDataTable } from '../../../../components/DataTable';
 import {
   runPPLPreview,
   extractIndicesFromPPL,
-  findCommonDateFields,
+  // WAZUH
+  // findCommonDateFields,
+  findCommonDateFieldsWithDynamicTemplates,
   addTimeFilterToQuery,
   computeLookBackMinutes,
 } from '../CreateMonitor/utils/pplAlertingHelpers';
@@ -453,7 +457,11 @@ class DefineMonitor extends Component {
 
         // TODO FIXME: Doc level backend monitor run results don't include duration metrics. Using this for now.
         //  This returns a much longer duration than other monitors, though.
-        if (monitor_type === MONITOR_TYPE.DOC_LEVEL || monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE) { // Wazuh: Handle Active Response monitor type
+        if (
+          monitor_type === MONITOR_TYPE.DOC_LEVEL ||
+          monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE
+        ) {
+          // Wazuh: Handle Active Response monitor type
           let hitsCount = 0;
           _.keys(response).forEach(
             (resultKey) => (hitsCount += _.values(performanceResponse[resultKey]).length)
@@ -487,7 +495,9 @@ class DefineMonitor extends Component {
     const index = this.props.values.index.map(({ label, value }) => value || label);
     try {
       const mappings = await this.queryMappings(index);
-      const dataTypes = getPathsPerDataType(mappings);
+      // WAZUH
+      // const dataTypes = getPathsPerDataType(mappings);
+      const dataTypes = getPathsPerDataTypeWithDynamicTemplates(mappings);
       this.setState({ dataTypes });
     } catch (err) {
       console.error('There was an error getting mappings for query', err);
@@ -714,7 +724,13 @@ class DefineMonitor extends Component {
       this.notifyDateFieldsChange(this.state.pplAvailableDateFields, null, true)
     );
     try {
-      const { commonDateFields, error } = await findCommonDateFields(
+      // WAZUH
+      // const { commonDateFields, error } = await findCommonDateFields(
+      //   httpClient,
+      //   indices,
+      //   landingDataSourceId
+      // );
+      const { commonDateFields, error } = await findCommonDateFieldsWithDynamicTemplates(
         httpClient,
         indices,
         landingDataSourceId

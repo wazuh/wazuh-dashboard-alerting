@@ -5,6 +5,8 @@
 
 import React from 'react';
 import Message from '../components/Action/actions';
+// Wazuh
+import ActiveResponseSummary from '../components/Action/actions/ActiveResponseSummary';
 
 export const DEFAULT_MESSAGE_SOURCE = {
   BUCKET_LEVEL_MONITOR: `
@@ -82,4 +84,4 @@ export const webhookNotificationActionMessageComponent = (props) => (
 export const defaultNotificationActionMessageComponent = (props) => <Message {...props} />;
 
 // Wazuh
-export const activeResponseActionMessageComponent = () => null;
+export const activeResponseActionMessageComponent = (props) => <ActiveResponseSummary {...props} />;
