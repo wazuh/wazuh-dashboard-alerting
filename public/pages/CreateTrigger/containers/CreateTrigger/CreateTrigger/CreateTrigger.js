@@ -33,7 +33,9 @@ import { SEARCH_TYPE } from '../../../../../utils/constants';
 import { SubmitErrorHandler } from '../../../../../utils/SubmitErrorHandler';
 import { backendErrorNotification } from '../../../../../utils/helpers';
 import DefineBucketLevelTrigger from '../../DefineBucketLevelTrigger';
-import { getPathsPerDataType } from '../../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
+// WAZUH
+// import { getPathsPerDataType } from '../../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
+import { getPathsPerDataTypeWithDynamicTemplates } from '../../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
 import { MONITOR_TYPE } from '../../../../../utils/constants';
 import { buildClusterMetricsRequest } from '../../../../CreateMonitor/components/ClusterMetricsMonitor/utils/clusterMetricsMonitorHelpers';
 import { getTimeZone } from '../../../utils/helper';
@@ -285,7 +287,9 @@ export default class CreateTrigger extends Component {
     const indices = this.props.monitor.inputs[0].search?.indices || [];
     try {
       const mappings = await this.queryMappings(indices);
-      const dataTypes = getPathsPerDataType(mappings);
+      // WAZUH
+      // const dataTypes = getPathsPerDataType(mappings);
+      const dataTypes = getPathsPerDataTypeWithDynamicTemplates(mappings);
       this.setState({ dataTypes });
     } catch (err) {
       console.error('There was an error getting mappings for query', err);

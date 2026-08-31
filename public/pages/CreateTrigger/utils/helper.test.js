@@ -4,8 +4,8 @@
  */
 
 import _ from 'lodash';
-import { getDefaultScript, getTriggerContext, getTimeZone } from './helper';
-import { MONITOR_TYPE } from '../../../utils/constants';
+import { getChannelOptions, getDefaultScript, getTriggerContext, getTimeZone } from './helper';
+import { BACKEND_CHANNEL_TYPE, CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
 import {
   FORMIK_INITIAL_DOC_LEVEL_SCRIPT,
   FORMIK_INITIAL_TRIGGER_VALUES,
@@ -18,6 +18,30 @@ import moment from 'moment-timezone';
 import { formikToTrigger } from '../containers/CreateTrigger/utils/formikToTrigger';
 
 describe('CreateTrigger/utils/helper', () => {
+  // Wazuh: the group heading used to render the raw backend key
+  describe('getChannelOptions', () => {
+    test('names each group after its channel type', () => {
+      const channels = [
+        { label: 'Block-IP', value: 'ar-1', type: BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE },
+        { label: '[Channel] Ops', value: 'ch-1', type: BACKEND_CHANNEL_TYPE.SLACK },
+      ];
+
+      expect(getChannelOptions(channels).map(({ key, label }) => ({ key, label }))).toEqual([
+        {
+          key: BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE,
+          label: CHANNEL_TYPE[BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE],
+        },
+        {
+          key: BACKEND_CHANNEL_TYPE.SLACK,
+          label: CHANNEL_TYPE[BACKEND_CHANNEL_TYPE.SLACK],
+        },
+      ]);
+    });
+
+    test('falls back to the type of an unknown channel', () => {
+      expect(getChannelOptions([{ value: 'x', type: 'brand_new' }])[0].label).toBe('brand_new');
+    });
+  });
   describe('getDefaultScript', () => {
     test('when monitor_type is undefined', () => {
       const monitorValues = undefined;
