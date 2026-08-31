@@ -56,6 +56,9 @@ export default class CreateMonitor extends Component {
     // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
     this.toastTracker = createToastTracker(props.notifications);
 
+    // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
+    this.toastTracker = createToastTracker(props.notifications);
+
     this.state = {
       plugins: [],
       response: null,
