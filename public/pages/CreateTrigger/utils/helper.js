@@ -5,7 +5,7 @@
 
 import _ from 'lodash';
 import { DESTINATION_TYPE } from '../../Destinations/utils/constants';
-import { BACKEND_CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
+import { BACKEND_CHANNEL_TYPE, CHANNEL_TYPE, MONITOR_TYPE } from '../../../utils/constants';
 import { FORMIK_INITIAL_VALUES } from '../../CreateMonitor/containers/CreateMonitor/utils/constants';
 import {
   API_TYPES,
@@ -23,24 +23,24 @@ export const getChannelOptions = (channels) => {
   const channelMap = {};
 
   // Iterate over channels to group options by channel type
-  channels.forEach(channel => {
+  channels.forEach((channel) => {
     if (!channelMap[channel.type]) {
       channelMap[channel.type] = {
         key: channel.type,
-        label: channel.type,
-        options: []
+        label: CHANNEL_TYPE[channel.type] || channel.type, // Wazuh: not the raw backend key
+        options: [],
       };
     }
     // Add the option to the corresponding channel type
     channelMap[channel.type].options.push({
       key: channel.value,
-      ...channel
+      ...channel,
     });
   });
 
   // Convert the channelMap object to an array of values
   const channelOptions = Object.values(channelMap);
-  
+
   return channelOptions;
 };
 
@@ -75,8 +75,14 @@ export const getTriggerContext = (executeResponse, monitor, values, triggerIndex
   if (_.isArray(trigger) && triggerIndex >= 0) trigger = trigger[triggerIndex];
 
   return {
-    periodStart: moment.utc(_.get(executeResponse, 'period_start', Date.now())).tz(getTimeZone()).format(),
-    periodEnd: moment.utc(_.get(executeResponse, 'period_end', Date.now())).tz(getTimeZone()).format(),
+    periodStart: moment
+      .utc(_.get(executeResponse, 'period_start', Date.now()))
+      .tz(getTimeZone())
+      .format(),
+    periodEnd: moment
+      .utc(_.get(executeResponse, 'period_end', Date.now()))
+      .tz(getTimeZone())
+      .format(),
     results: [_.get(executeResponse, 'input_results.results[0]')].filter((result) => !!result),
     trigger: trigger,
     alert: null,
@@ -126,5 +132,5 @@ export function getTimeZone() {
   // TODO: Include support to configure timezones rather than using the default UTC as requested here - https://github.com/opensearch-project/alerting/issues/1744
   // const detectedTimeZone = getUISettings().get('dateFormat:tz', 'Browser');
   // return detectedTimeZone === 'Browser' ? (moment.tz.guess() || moment.format('Z')) : detectedTimeZone;
-  return "UTC";
+  return 'UTC';
 }

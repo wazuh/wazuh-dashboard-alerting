@@ -21,7 +21,9 @@ import TriggerEmptyPrompt from '../../components/TriggerEmptyPrompt';
 import { MAX_TRIGGERS } from '../../../MonitorDetails/containers/Triggers/Triggers';
 import DefineTrigger from '../DefineTrigger';
 import { MONITOR_TYPE, SEARCH_TYPE } from '../../../../utils/constants';
-import { getPathsPerDataType } from '../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
+// WAZUH
+// import { getPathsPerDataType } from '../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
+import { getPathsPerDataTypeWithDynamicTemplates } from '../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
 import monitorToFormik from '../../../CreateMonitor/containers/CreateMonitor/utils/monitorToFormik';
 import { buildRequest } from '../../../CreateMonitor/containers/DefineMonitor/utils/searchRequests';
 import { backendErrorNotification, inputLimitText } from '../../../../utils/helpers';
@@ -221,7 +223,9 @@ class ConfigureTriggers extends React.Component {
     const indices = this.props.monitor.inputs[0].search?.indices || [];
     try {
       const mappings = await this.queryMappings(indices);
-      const dataTypes = getPathsPerDataType(mappings);
+      // WAZUH
+      // const dataTypes = getPathsPerDataType(mappings);
+      const dataTypes = getPathsPerDataTypeWithDynamicTemplates(mappings);
       this.setState({ dataTypes });
     } catch (err) {
       console.error('There was an error getting mappings for query', err);
@@ -438,7 +442,8 @@ class ConfigureTriggers extends React.Component {
   };
 
   render() {
-    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues, errors, submitCount } = this.props;
+    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues, errors, submitCount } =
+      this.props;
     const { ContentPanelStructure } = this.state;
     const numOfTriggers = _.get(triggerValues, 'triggerDefinitions', []).length;
     const displayAddTriggerButton = numOfTriggers > 0;

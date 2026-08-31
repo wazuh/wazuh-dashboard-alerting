@@ -5,7 +5,12 @@
 
 import _ from 'lodash';
 import { INDEX, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../utils/constants';
-import { ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX, MONITOR_TYPE } from './constants';
+import {
+  ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX,
+  ACTIVE_RESPONSE_MAX_INTERVAL,
+  MONITOR_TYPE,
+  MONITOR_TYPE_LABEL,
+} from './constants';
 import { TRIGGER_TYPE } from '../pages/CreateTrigger/containers/CreateTrigger/utils/constants';
 import { getDataSourceQueryObj } from '../pages/utils/helpers';
 
@@ -141,6 +146,24 @@ export const validatePositiveInteger = (value) => {
   if (!Number.isInteger(value) || value < 1) return 'Must be a positive integer.';
 };
 
+/**
+ * Wazuh: the indexer caps an Active Response monitor schedule at 60 seconds, so the largest
+ * interval depends on the unit the schedule is expressed in.
+ */
+export const validateActiveResponseInterval = (unit) => (value) => {
+  const maxInterval = ACTIVE_RESPONSE_MAX_INTERVAL[unit];
+  if (!maxInterval) return validateActiveResponseUnit(unit);
+  if (!Number.isInteger(value) || value < 1 || value > maxInterval)
+    return `Must be between 1 and ${maxInterval} ${unit.toLowerCase()}.`;
+};
+
+export const validateActiveResponseUnit = (value) => {
+  if (!ACTIVE_RESPONSE_MAX_INTERVAL[value])
+    return `Must be one of ${Object.keys(ACTIVE_RESPONSE_MAX_INTERVAL)
+      .map((unit) => unit.toLowerCase())
+      .join(', ')}.`;
+};
+
 export const validateUnit = (value) => {
   if (!['MINUTES', 'HOURS', 'DAYS'].includes(value)) return 'Must be one of minutes, hours, days.';
 };
@@ -182,8 +205,11 @@ const MONITOR_TYPES_WITHOUT_INDEX_PATTERN_SUPPORT = [
 export const supportsIndexPatterns = (monitorType) =>
   !MONITOR_TYPES_WITHOUT_INDEX_PATTERN_SUPPORT.includes(monitorType);
 
-export const DOC_LEVEL_INDEX_PATTERN_ERROR =
-  'Index patterns are not supported for document level monitors. Select a single index instead of a wildcard (*) or date math pattern.';
+// Wazuh: name the monitor type the user actually selected
+export const getIndexPatternError = (monitorType) =>
+  `Index patterns are not supported for ${
+    MONITOR_TYPE_LABEL[monitorType] || 'these monitors'
+  }. Select a single index instead of a wildcard (*) or date math pattern.`;
 
 export const validateIndex = (options, monitorType) => {
   if (!Array.isArray(options)) return 'Must specify an index.';
@@ -200,7 +226,7 @@ export const validateIndex = (options, monitorType) => {
     !supportsIndexPatterns(monitorType) &&
     options.some(({ value, label }) => containsIndexPatternSyntax(value || label))
   ) {
-    return DOC_LEVEL_INDEX_PATTERN_ERROR;
+    return getIndexPatternError(monitorType);
   }
 };
 

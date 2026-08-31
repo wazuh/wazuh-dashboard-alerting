@@ -158,6 +158,7 @@ class ConfigureActions extends React.Component {
 
     // Wazuh
     let indexActiveResponse = 0;
+    let activeResponses = [];
     const getActiveResponsesChannels = async () => {
       const getChannelsQuery = {
         from_index: indexActiveResponse,
@@ -169,16 +170,19 @@ class ConfigureActions extends React.Component {
 
       const channelsResponse = await this.props.notificationService.getChannels(getChannelsQuery);
 
-      channels = channels.concat(
+      activeResponses = activeResponses.concat(
         channelsResponse.items.map((channel) => ({
-          label: `[Active response] ${channel.name}`,
+          label: channel.name,
           value: channel.config_id,
           type: channel.config_type,
           description: channel.description,
+          // Wazuh: the trigger action needs the mute state and the configuration to warn about them
+          isEnabled: channel.is_enabled,
+          activeResponse: channel.active_response,
         }))
       );
 
-      if (channelsResponse.total && channels.length < channelsResponse.total) {
+      if (channelsResponse.total && activeResponses.length < channelsResponse.total) {
         indexActiveResponse += MAX_CHANNELS_RESULT_SIZE;
         await getActiveResponsesChannels();
       }
@@ -190,7 +194,7 @@ class ConfigureActions extends React.Component {
       await getActiveResponsesChannels();
     }
 
-    return channels;
+    return channels.concat(activeResponses);
   };
 
   loadDestinations = async (searchText = '') => {
