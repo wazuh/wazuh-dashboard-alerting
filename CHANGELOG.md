@@ -5,7 +5,7 @@
 | Issue | Comment |
 | ----- | ------- |
 | [#13](https://github.com/wazuh/wazuh-dashboard-alerting/issues/13) | Added debounce to Document Level Query text inputs |
-| [#33](https://github.com/wazuh/wazuh-dashboard-alerting/pull/33) [#133](https://github.com/wazuh/wazuh-dashboard-alerting/issues/133) [#147](https://github.com/wazuh/wazuh-dashboard-alerting/issues/147) | Add "Active Response" monitor type |
+| [#33](https://github.com/wazuh/wazuh-dashboard-alerting/pull/33) [#133](https://github.com/wazuh/wazuh-dashboard-alerting/issues/133) [#147](https://github.com/wazuh/wazuh-dashboard-alerting/issues/147) | Added the "Active Response" monitor type |
 
 ### Changed
 
@@ -13,8 +13,8 @@
 | ----- | ------- |
 | [#4](https://github.com/wazuh/wazuh-dashboard-alerting/pull/4) | Changed category in the side menu to `Explore` |
 | [#22](https://github.com/wazuh/wazuh-dashboard-alerting/pull/22) | Support `date` and `ip` type fields in document level queries |
-| [#18](https://github.com/wazuh/wazuh-dashboard-alerting/pull/18) | Hide "Add active response" button for all monitor types except "Per document monitor" / Do not auto-load notification form when adding a trigger. |
-| [#85](https://github.com/wazuh/wazuh-dashboard-alerting/pull/85) | Hide `security_analytics` owned monitors in table |
+| [#18](https://github.com/wazuh/wazuh-dashboard-alerting/pull/18) | Hide "Add active response" button for all monitor types except "Per document monitor" / Do not auto-load notification form when adding a trigger |
+| [#85](https://github.com/wazuh/wazuh-dashboard-alerting/pull/85) | Hide the monitors owned by the Ruleset management plugin (`security_analytics`) in the monitors table |
 | [#88](https://github.com/wazuh/wazuh-dashboard-alerting/pull/88) | Hide `Destinations` tab |
 | [#89](https://github.com/wazuh/wazuh-dashboard-alerting/pull/89) | Hide `Document findings` tab in Active Response and Per document monitor details |
 
