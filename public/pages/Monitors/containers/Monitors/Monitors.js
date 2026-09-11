@@ -87,15 +87,7 @@ export default class Monitors extends Component {
 
   componentDidMount() {
     const { page, size, search, sortField, sortDirection, monitorState, monitorType } = this.state;
-    this.getMonitors(
-      page * size,
-      size,
-      search,
-      sortField,
-      sortDirection,
-      monitorState,
-      monitorType
-    );
+    this.getMonitors(page * size, size, search, sortField, sortDirection, monitorState, monitorType);
     // Wazuh: the Active responses column holds names, the monitors only hold ids
     getActiveResponseNames(this.props.httpClient)
       .then((activeResponseNames) => this.setState({ activeResponseNames }))
@@ -164,15 +156,7 @@ export default class Monitors extends Component {
 
   updateMonitorList() {
     const { page, size, search, sortField, sortDirection, monitorState, monitorType } = this.state;
-    this.getMonitors(
-      page * size,
-      size,
-      search,
-      sortField,
-      sortDirection,
-      monitorState,
-      monitorType
-    );
+    this.getMonitors(page * size, size, search, sortField, sortDirection, monitorState, monitorType);
   }
 
   getQueryObjectFromState({
@@ -200,17 +184,7 @@ export default class Monitors extends Component {
     try {
       const dataSourceId = getDataSourceId();
       // Wazuh: monitorType is filtered server side, so the total and the pages match the rows
-      const params = {
-        from,
-        size,
-        search,
-        sortField,
-        sortDirection,
-        state,
-        dataSourceId,
-        excludeOwner: EXCLUDED_OWNER,
-        monitorType,
-      };
+      const params = { from, size, search, sortField, sortDirection, state, dataSourceId, excludeOwner: EXCLUDED_OWNER, monitorType };
       const queryParamsString = queryString.stringify(params);
       const { httpClient, history } = this.props;
       history.replace({ ...this.props.location, search: queryParamsString });

@@ -262,17 +262,7 @@ export default class MonitorService extends MDSEnabledClientService {
 
   getMonitors = async (context, req, res) => {
     try {
-      const {
-        from,
-        size,
-        search,
-        sortDirection,
-        sortField,
-        state,
-        monitorIds,
-        excludeOwner,
-        monitorType,
-      } = req.query;
+      const { from, size, search, sortDirection, sortField, state, monitorIds, excludeOwner, monitorType } = req.query;
 
       let must = { match_all: {} };
       if (search.trim()) {

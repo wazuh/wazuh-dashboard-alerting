@@ -124,10 +124,9 @@ const Action = ({
 }) => {
   const [backupValues, setBackupValues] = useState();
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
-  const ManageButton = useMemo(
-    () => (flyoutMode ? EuiSmallButtonEmpty : EuiSmallButton),
-    [flyoutMode]
-  );
+  const ManageButton = useMemo(() => (flyoutMode ? EuiSmallButtonEmpty : EuiSmallButton), [
+    flyoutMode,
+  ]);
   const Accordion = useMemo(() => (flyoutMode ? MinimalAccordion : EuiAccordion), [flyoutMode]);
   const [loadingDestinations, setLoadingDestinations] = useState(false);
   const selectedDestination = flattenedDestinations.filter(

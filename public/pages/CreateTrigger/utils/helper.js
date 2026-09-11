@@ -28,7 +28,7 @@ export const getChannelOptions = (channels) => {
       channelMap[channel.type] = {
         key: channel.type,
         label: CHANNEL_TYPE[channel.type] || channel.type, // Wazuh: not the raw backend key
-        options: [],
+        options: []
       };
     }
     // Add the option to the corresponding channel type

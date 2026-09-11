@@ -8,7 +8,10 @@ import { connect } from 'formik'; // Wazuh
 import { FormikSelect } from '../../../../../components/FormControls';
 import { isInvalid, hasError } from '../../../../../utils/validate';
 // Wazuh
-import { ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS, MONITOR_TYPE } from '../../../../../utils/constants';
+import {
+  ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS,
+  MONITOR_TYPE,
+} from '../../../../../utils/constants';
 
 const frequencies = [
   { value: 'interval', text: 'By interval' },
