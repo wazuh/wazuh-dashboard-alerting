@@ -312,12 +312,16 @@ describe('validateActiveResponseInterval', () => {
   test('caps the interval at 60 seconds', () => {
     expect(validateActiveResponseInterval('SECONDS')(1)).toBeUndefined();
     expect(validateActiveResponseInterval('SECONDS')(60)).toBeUndefined();
-    expect(validateActiveResponseInterval('SECONDS')(61)).toBe('Must be between 1 and 60 seconds.');
+    expect(validateActiveResponseInterval('SECONDS')(61)).toBe(
+      'Must be between 1 and 60 seconds.'
+    );
   });
 
   test('allows a single minute, and nothing longer', () => {
     expect(validateActiveResponseInterval('MINUTES')(1)).toBeUndefined();
-    expect(validateActiveResponseInterval('MINUTES')(2)).toBe('Must be between 1 and 1 minutes.');
+    expect(validateActiveResponseInterval('MINUTES')(2)).toBe(
+      'Must be between 1 and 1 minutes.'
+    );
   });
 
   test('rejects non positive integers', () => {
@@ -329,7 +333,9 @@ describe('validateActiveResponseInterval', () => {
   });
 
   test('rejects a unit the schedule cannot be expressed in', () => {
-    expect(validateActiveResponseInterval('HOURS')(1)).toBe('Must be one of seconds, minutes.');
+    expect(validateActiveResponseInterval('HOURS')(1)).toBe(
+      'Must be one of seconds, minutes.'
+    );
   });
 });
 
