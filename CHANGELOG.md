@@ -17,6 +17,7 @@
 | [#83](https://github.com/wazuh/wazuh-dashboard-alerting/issues/83) | Hide the monitors owned by the Ruleset management plugin (`security_analytics`) in the monitors table |
 | [#87](https://github.com/wazuh/wazuh-dashboard-alerting/issues/87) | Hide `Destinations` tab |
 | [#86](https://github.com/wazuh/wazuh-dashboard-alerting/issues/86) | Hide `Document findings` tab in Active Response and Per document monitor details |
+| [wazuh-dashboard#1605](https://github.com/wazuh/wazuh-dashboard/issues/1605) | Changed the Prettier check to skip the files that were already unformatted on the base branch |
 
 ### Fixed
 
