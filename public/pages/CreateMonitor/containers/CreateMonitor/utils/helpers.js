@@ -152,6 +152,7 @@ export const prepareTriggers = ({
         triggerType = TRIGGER_TYPE.BUCKET_LEVEL;
         break;
       case MONITOR_TYPE.DOC_LEVEL:
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         triggerType = TRIGGER_TYPE.DOC_LEVEL;
         break;
       case MONITOR_TYPE.COMPOSITE_LEVEL:
@@ -224,6 +225,8 @@ export const create = async ({
   } catch (err) {
     console.error(err);
     setSubmitting(false);
+    // Wazuh: a failed creation used to leave no trace in the UI
+    backendErrorNotification(notifications, 'create', 'monitor', err.message);
   }
 };
 
@@ -240,10 +243,13 @@ export const update = async ({ history, updateMonitor, notifications, monitor, f
       history.push(`/monitors/${id}?type=${isWorkflow ? 'workflow' : 'monitor'}`);
     } else {
       console.log('Failed to update:', resp);
+      // Wazuh: a failed update used to leave no trace in the UI
+      backendErrorNotification(notifications, 'update', 'monitor', resp.resp);
     }
   } catch (err) {
     console.error(err);
     setSubmitting(false);
+    backendErrorNotification(notifications, 'update', 'monitor', err.message);
   }
 };
 

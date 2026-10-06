@@ -11,4 +11,5 @@ export const DEFAULT_QUERY_PARAMS = {
   sortField: 'name',
   sortDirection: 'desc',
   state: 'all',
+  monitorType: 'all', // Wazuh
 };

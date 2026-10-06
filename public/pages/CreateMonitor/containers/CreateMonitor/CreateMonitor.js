@@ -20,6 +20,7 @@ import { FORMIK_INITIAL_VALUES } from './utils/constants';
 import { formikToMonitor } from './utils/formikToMonitor';
 import { MONITOR_TYPE, SEARCH_TYPE } from '../../../../utils/constants';
 import { SubmitErrorHandler } from '../../../../utils/SubmitErrorHandler';
+import { createToastTracker } from '../../../../utils/toastTracker'; // Wazuh
 import MonitorDetails from '../MonitorDetails';
 import ConfigureTriggers from '../../../CreateTrigger/containers/ConfigureTriggers';
 import ConfigureTriggersPpl from '../../../CreateTrigger/containers/ConfigureTriggers/ConfigureTriggersPpl';
@@ -52,6 +53,15 @@ export default class CreateMonitor extends Component {
     const initialValues = getInitialValues({ location, monitorToEdit, edit });
     initialValues.dataSourceEndpoint = props.dataSourceEndpoint || '';
 
+    // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
+    this.toastTracker = createToastTracker(props.notifications);
+
+    // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
+    this.toastTracker = createToastTracker(props.notifications);
+
+    // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
+    this.toastTracker = createToastTracker(props.notifications);
+
     this.state = {
       plugins: [],
       response: null,
@@ -70,6 +80,7 @@ export default class CreateMonitor extends Component {
     this.onCancel = this.onCancel.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     this.evaluateSubmission = this.evaluateSubmission.bind(this);
+    this.validateForm = this.validateForm.bind(this);
   }
 
   componentDidMount() {
@@ -111,6 +122,24 @@ export default class CreateMonitor extends Component {
     }
   };
 
+  // Wazuh: Validate that Active Response monitors have at least one trigger with an AR action
+  validateForm(values) {
+    const errors = {};
+    if (values.monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE) {
+      const triggerDefinitions = _.get(values, 'triggerDefinitions', []);
+      const hasActiveResponseAction = triggerDefinitions.some((trigger) =>
+        _.get(trigger, 'actions', []).some((action) =>
+          _.get(action, 'id', '').startsWith('activeResponse')
+        )
+      );
+      if (!hasActiveResponseAction) {
+        errors.noActiveResponseAction =
+          'There must be at least one trigger with an Active Response action configured.';
+      }
+    }
+    return errors;
+  }
+
   evaluateSubmission(values, formikBag) {
     const { performanceResponse } = this.props;
     const { createModalOpen } = this.state;
@@ -133,7 +162,8 @@ export default class CreateMonitor extends Component {
   }
 
   onSubmit(values, formikBag) {
-    const { edit, history, updateMonitor, notifications, httpClient, monitorToEdit } = this.props;
+    const { edit, history, updateMonitor, httpClient, monitorToEdit } = this.props;
+    const { notifications } = this.toastTracker; // Wazuh
     const { triggerToEdit } = this.state;
 
     if (values.monitor_type === MONITOR_TYPE.PPL) {
@@ -171,6 +201,7 @@ export default class CreateMonitor extends Component {
 
   componentWillUnmount() {
     this.props.setFlyout(null);
+    this.toastTracker.removeAll(); // Wazuh
   }
 
   componentDidUpdate(prevProps) {
@@ -248,10 +279,20 @@ export default class CreateMonitor extends Component {
         <Formik
           initialValues={initialValues}
           onSubmit={this.evaluateSubmission}
+          validate={this.validateForm}
           validateOnChange={false}
           enableReinitialize={true}
         >
-          {({ values, errors, handleSubmit, isSubmitting, isValid, touched, setFieldValue }) => {
+          {({
+            values,
+            errors,
+            handleSubmit,
+            isSubmitting,
+            isValid,
+            touched,
+            setFieldValue,
+            submitCount,
+          }) => {
             const isComposite = values.monitor_type === MONITOR_TYPE.COMPOSITE_LEVEL;
             const isPpl = values.monitor_type === MONITOR_TYPE.PPL;
 
@@ -350,6 +391,8 @@ export default class CreateMonitor extends Component {
                         {(triggerArrayHelpers) => (
                           <ConfigureTriggers
                             edit={edit}
+                            errors={errors}
+                            submitCount={submitCount}
                             triggerArrayHelpers={triggerArrayHelpers}
                             monitor={formikToMonitor(values)}
                             monitorValues={values}
@@ -387,7 +430,7 @@ export default class CreateMonitor extends Component {
                   isSubmitting={isSubmitting}
                   isValid={isValid}
                   onSubmitError={() =>
-                    notifications.toasts.addDanger({
+                    this.toastTracker.notifications.toasts.addDanger({
                       title: `Failed to ${edit ? 'update' : 'create'} the monitor`,
                       text: 'Fix all highlighted error(s) before continuing.',
                     })

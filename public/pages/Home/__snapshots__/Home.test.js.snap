@@ -31,18 +31,6 @@ exports[`Home renders 1`] = `
         Monitors
       </span>
     </button>
-    <button
-      aria-selected="false"
-      class="euiTab"
-      role="tab"
-      type="button"
-    >
-      <span
-        class="euiTab__content"
-      >
-        Destinations
-      </span>
-    </button>
   </div>
   <div
     style="padding:16px"

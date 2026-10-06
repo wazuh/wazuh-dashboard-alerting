@@ -22,7 +22,9 @@ import ExtractionQuery from '../../components/ExtractionQuery';
 import MonitorExpressions from '../../components/MonitorExpressions';
 import QueryPerformance from '../../components/QueryPerformance';
 import { formikToMonitor } from '../CreateMonitor/utils/formikToMonitor';
-import { getPathsPerDataType } from './utils/mappings';
+// WAZUH
+// import { getPathsPerDataType } from './utils/mappings';
+import { getPathsPerDataTypeWithDynamicTemplates } from './utils/mappings';
 import { buildRequest } from './utils/searchRequests';
 import { SEARCH_TYPE, OS_AD_PLUGIN, MONITOR_TYPE } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
@@ -45,7 +47,9 @@ import { PplQueryEditor } from '../../../../components/PplQueryEditor';
 import {
   runPPLPreview,
   extractIndicesFromPPL,
-  findCommonDateFields,
+  // WAZUH
+  // findCommonDateFields,
+  findCommonDateFieldsWithDynamicTemplates,
   addTimeFilterToQuery,
   computeLookBackMinutes,
 } from '../CreateMonitor/utils/pplAlertingHelpers';
@@ -241,6 +245,7 @@ class DefineMonitor extends Component {
         return true;
       case MONITOR_TYPE.CLUSTER_METRICS:
         return false;
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       case MONITOR_TYPE.DOC_LEVEL:
         return false;
       default:
@@ -295,6 +300,7 @@ class DefineMonitor extends Component {
     const aggregations = _.get(values, 'aggregations');
     const monitorExpressions = () => {
       switch (values.monitor_type) {
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           return <ConfigureDocumentLevelQueries errors={errors} dataTypes={dataTypes} />;
         default:
@@ -309,10 +315,11 @@ class DefineMonitor extends Component {
       switch (values.monitor_type) {
         case MONITOR_TYPE.BUCKET_LEVEL:
           return this.getBucketMonitorGraphs(aggregations, formikSnapshot, response);
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           const { index, queries } = values;
           accordionTitle = 'Preview findings and performance';
-          return _.isEmpty(response) ? (
+          return _.isNull(response) ? (
             renderEmptyMessage(
               validDocLevelGraphQueries(queries) ? '' : 'You must define at least one query.'
             )
@@ -348,8 +355,8 @@ class DefineMonitor extends Component {
                     'Invalid input in data filter. Remove data filter or adjust filter '
                   )
                 : loadingResponse
-                  ? renderEmptyMessage()
-                  : previewContent()}
+                ? renderEmptyMessage()
+                : previewContent()}
             </EuiAccordion>
             <EuiSpacer size="m" />
           </>
@@ -364,10 +371,14 @@ class DefineMonitor extends Component {
 
     // Cancel execution criteria
     switch (monitor_type) {
+      case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       case MONITOR_TYPE.DOC_LEVEL:
-        const { queries } = values;
-        const canExecute = searchType === SEARCH_TYPE.GRAPH && validDocLevelGraphQueries(queries);
-        if (!canExecute) return;
+        // Wazuh: fix conditional to only run validation for doc level graph queries
+        if (searchType === SEARCH_TYPE.GRAPH) {
+          const { queries } = values;
+          if (!validDocLevelGraphQueries(queries)) return;
+        }
+        break;
     }
 
     // Don't attempt to run a preview until the query is actually executable.
@@ -451,7 +462,11 @@ class DefineMonitor extends Component {
 
         // TODO FIXME: Doc level backend monitor run results don't include duration metrics. Using this for now.
         //  This returns a much longer duration than other monitors, though.
-        if (monitor_type === MONITOR_TYPE.DOC_LEVEL) {
+        if (
+          monitor_type === MONITOR_TYPE.DOC_LEVEL ||
+          monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE
+        ) {
+          // Wazuh: Handle Active Response monitor type
           let hitsCount = 0;
           _.keys(response).forEach(
             (resultKey) => (hitsCount += _.values(performanceResponse[resultKey]).length)
@@ -485,7 +500,9 @@ class DefineMonitor extends Component {
     const index = this.props.values.index.map(({ label, value }) => value || label);
     try {
       const mappings = await this.queryMappings(index);
-      const dataTypes = getPathsPerDataType(mappings);
+      // WAZUH
+      // const dataTypes = getPathsPerDataType(mappings);
+      const dataTypes = getPathsPerDataTypeWithDynamicTemplates(mappings);
       this.setState({ dataTypes });
     } catch (err) {
       console.error('There was an error getting mappings for query', err);
@@ -534,7 +551,9 @@ class DefineMonitor extends Component {
     const { values, flyoutMode } = this.props;
     const { index, timeField } = values;
     let content;
-    const supportsTimeField = values.monitor_type !== MONITOR_TYPE.DOC_LEVEL;
+    const supportsTimeField =
+      values.monitor_type !== MONITOR_TYPE.DOC_LEVEL &&
+      values.monitor_type !== MONITOR_TYPE.ACTIVE_RESPONSE; // Wazuh: Handle Active Response monitor type
     if (index.length) {
       content =
         _.isEmpty(timeField) && supportsTimeField
@@ -710,7 +729,13 @@ class DefineMonitor extends Component {
       this.notifyDateFieldsChange(this.state.pplAvailableDateFields, null, true)
     );
     try {
-      const { commonDateFields, error } = await findCommonDateFields(
+      // WAZUH
+      // const { commonDateFields, error } = await findCommonDateFields(
+      //   httpClient,
+      //   indices,
+      //   landingDataSourceId
+      // );
+      const { commonDateFields, error } = await findCommonDateFieldsWithDynamicTemplates(
         httpClient,
         indices,
         landingDataSourceId

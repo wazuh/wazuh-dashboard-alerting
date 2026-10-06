@@ -36,9 +36,12 @@ const ComboBox = ({
   name,
   form,
   field,
-  inputProps: { onBlur, onChange, onCreateOption, ...rest },
+  // Wazuh: `comboBoxRef` gives the consumer access to the combo box instance, which is needed to
+  // reset the search input imperatively.
+  inputProps: { onBlur, onChange, onCreateOption, comboBoxRef, ...rest },
 }) => (
   <EuiCompressedComboBox
+    ref={comboBoxRef}
     name={name}
     id={name}
     onChange={

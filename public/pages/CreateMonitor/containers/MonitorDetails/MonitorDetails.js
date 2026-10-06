@@ -78,6 +78,7 @@ const MonitorDetails = ({
     isAd &&
     renderAnomalyDetector({ httpClient, values, detectorId, flyoutMode, landingDataSourceId });
   const isPpl = values.monitor_type === MONITOR_TYPE.PPL;
+  // Wazuh: hide monitor defining method options for doc level monitor
   const displayMonitorDefinitionCards =
     values.monitor_type !== MONITOR_TYPE.CLUSTER_METRICS && !isPpl && !isMustang;
   const Container = useMemo(

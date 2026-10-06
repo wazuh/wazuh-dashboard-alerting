@@ -38,6 +38,7 @@ class DataSource extends Component {
     const displayTimeField =
       searchType === SEARCH_TYPE.GRAPH &&
       monitor_type !== MONITOR_TYPE.DOC_LEVEL &&
+      monitor_type !== MONITOR_TYPE.ACTIVE_RESPONSE && // Wazuh: Handle Active Response monitor type
       monitor_type !== MONITOR_TYPE.CLUSTER_METRICS;
     const monitorIndexDisplay = (
       <>

@@ -14,6 +14,8 @@ import MonitorControls from '../../components/MonitorControls';
 import MonitorEmptyPrompt from '../../components/MonitorEmptyPrompt';
 import { DEFAULT_PAGE_SIZE_OPTIONS, DEFAULT_QUERY_PARAMS } from './utils/constants';
 import { getURLQueryParams } from './utils/helpers';
+// Wazuh
+import { getActiveResponseNames, withActiveResponseColumn } from './utils/activeResponses';
 import { columns as staticColumns } from './utils/tableUtils';
 import { MONITOR_ACTIONS, MONITOR_TYPE } from '../../../../utils/constants';
 import {
@@ -37,13 +39,14 @@ import {
 } from '../../../../services';
 
 const MAX_MONITOR_COUNT = 1000;
+export const EXCLUDED_OWNER = 'security_analytics'; // Wazuh: exclude monitors owned by security_analytics
 
 // TODO: Abstract out a Table component to be used in both Dashboard and Monitors
 
 export default class Monitors extends Component {
   constructor(props) {
     super(props);
-    const { from, size, search, sortField, sortDirection, state } = getURLQueryParams(
+    const { from, size, search, sortField, sortDirection, state, monitorType } = getURLQueryParams(
       this.props.location
     );
 
@@ -60,6 +63,8 @@ export default class Monitors extends Component {
       isPopoverOpen: false,
       monitors: [],
       monitorState: state,
+      monitorType, // Wazuh
+      activeResponseNames: {}, // Wazuh
       loadingMonitors: true,
       monitorItemsToDelete: undefined,
       resourceSharing: { dataSourceId: undefined, types: [] },
@@ -67,6 +72,7 @@ export default class Monitors extends Component {
     this.getMonitors = _.debounce(this.getMonitors.bind(this), 500, { leading: true });
     this.onTableChange = this.onTableChange.bind(this);
     this.onMonitorStateChange = this.onMonitorStateChange.bind(this);
+    this.onMonitorTypeChange = this.onMonitorTypeChange.bind(this); // Wazuh
     this.onSelectionChange = this.onSelectionChange.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
     this.updateMonitor = this.updateMonitor.bind(this);
@@ -90,9 +96,12 @@ export default class Monitors extends Component {
   }
 
   componentDidMount() {
-    const { page, size, search, sortField, sortDirection, monitorState } = this.state;
-    this.getMonitors(page * size, size, search, sortField, sortDirection, monitorState);
-    this.loadResourceSharingAvailability();
+    const { page, size, search, sortField, sortDirection, monitorState, monitorType } = this.state;
+    this.getMonitors(page * size, size, search, sortField, sortDirection, monitorState, monitorType);
+    // Wazuh: the Active responses column holds names, the monitors only hold ids
+    getActiveResponseNames(this.props.httpClient)
+      .then((activeResponseNames) => this.setState({ activeResponseNames }))
+      .catch((err) => console.error(err));
   }
 
   loadResourceSharingAvailability = async () => {
@@ -154,37 +163,8 @@ export default class Monitors extends Component {
         this.state.resourceSharing.types.includes(ALERTING_WORKFLOW_RESOURCE_TYPE));
 
     return [
-      ...staticColumns,
-      ...(resourceSharingAvailable
-        ? [
-            {
-              // Resource-sharing SPI marker column: the centralized Share
-              // button is mounted here by security-dashboards-plugin when
-              // installed and resource sharing is enabled for monitors or
-              // composite (workflow) monitors.
-              field: 'id',
-              name: 'Access',
-              sortable: false,
-              width: '120px',
-              render: (id, item) => {
-                const resourceType =
-                  item.monitor?.type === 'workflow'
-                    ? ALERTING_WORKFLOW_RESOURCE_TYPE
-                    : MONITOR_RESOURCE_TYPE;
-                return this.state.resourceSharing.dataSourceId === this.props.landingDataSourceId &&
-                  this.state.resourceSharing.types.includes(resourceType) ? (
-                  <div
-                    data-resource-share-button
-                    data-resource-id={id}
-                    data-resource-type={resourceType}
-                    {...(item.name ? { 'data-resource-name': item.name } : {})}
-                    data-resource-share-display="icon"
-                  />
-                ) : null;
-              },
-            },
-          ]
-        : []),
+      // Wazuh: name the active responses an Active Response monitor invokes
+      ...withActiveResponseColumn(staticColumns, this.state.activeResponseNames),
       {
         name: 'Actions',
         width: '60px',
@@ -206,11 +186,19 @@ export default class Monitors extends Component {
   }
 
   updateMonitorList() {
-    const { page, size, search, sortField, sortDirection, monitorState } = this.state;
-    this.getMonitors(page * size, size, search, sortField, sortDirection, monitorState);
+    const { page, size, search, sortField, sortDirection, monitorState, monitorType } = this.state;
+    this.getMonitors(page * size, size, search, sortField, sortDirection, monitorState, monitorType);
   }
 
-  getQueryObjectFromState({ page, size, search, sortField, sortDirection, monitorState }) {
+  getQueryObjectFromState({
+    page,
+    size,
+    search,
+    sortField,
+    sortDirection,
+    monitorState,
+    monitorType,
+  }) {
     return {
       page,
       size,
@@ -218,14 +206,16 @@ export default class Monitors extends Component {
       sortField,
       sortDirection,
       monitorState,
+      monitorType, // Wazuh
     };
   }
 
-  async getMonitors(from, size, search, sortField, sortDirection, state) {
+  async getMonitors(from, size, search, sortField, sortDirection, state, monitorType) {
     this.setState({ loadingMonitors: true });
     try {
-      const dataSourceId = this.props.landingDataSourceId;
-      const params = { from, size, search, sortField, sortDirection, state, dataSourceId };
+      const dataSourceId = getDataSourceId();
+      // Wazuh: monitorType is filtered server side, so the total and the pages match the rows
+      const params = { from, size, search, sortField, sortDirection, state, dataSourceId, excludeOwner: EXCLUDED_OWNER, monitorType };
       const queryParamsString = queryString.stringify(params);
       const { httpClient, history } = this.props;
       history.replace({ ...this.props.location, search: queryParamsString });
@@ -260,6 +250,11 @@ export default class Monitors extends Component {
 
   onMonitorStateChange(e) {
     this.setState({ page: 0, monitorState: e.target.value });
+  }
+
+  // Wazuh
+  onMonitorTypeChange(e) {
+    this.setState({ page: 0, monitorType: e.target.value });
   }
 
   onSelectionChange(selectedItems) {
@@ -492,6 +487,7 @@ export default class Monitors extends Component {
       alerts,
       monitors,
       monitorState,
+      monitorType,
       page,
       search,
       selectedItems,
@@ -504,7 +500,10 @@ export default class Monitors extends Component {
       loadingMonitors,
       monitorItemsToDelete,
     } = this.state;
-    const filterIsApplied = !!search || monitorState !== DEFAULT_QUERY_PARAMS.state;
+    const filterIsApplied =
+      !!search ||
+      monitorState !== DEFAULT_QUERY_PARAMS.state ||
+      monitorType !== DEFAULT_QUERY_PARAMS.monitorType; // Wazuh
 
     const pagination = {
       pageIndex: page,
@@ -559,6 +558,8 @@ export default class Monitors extends Component {
             state={monitorState}
             onSearchChange={this.onSearchChange}
             onStateChange={this.onMonitorStateChange}
+            monitorType={monitorType}
+            onMonitorTypeChange={this.onMonitorTypeChange}
             onPageClick={this.onPageClick}
             monitorActions={useUpdatedUx ? monitorActions : null}
           />

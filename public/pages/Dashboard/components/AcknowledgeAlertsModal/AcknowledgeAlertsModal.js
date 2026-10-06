@@ -270,6 +270,7 @@ export default class AcknowledgeAlertsModal extends Component {
         case MONITOR_TYPE.QUERY_LEVEL:
         case MONITOR_TYPE.CLUSTER_METRICS:
         case MONITOR_TYPE.DOC_LEVEL:
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           return `${item.id}-${item.version}`;
         case MONITOR_TYPE.BUCKET_LEVEL:
           return item.id;
@@ -300,6 +301,7 @@ export default class AcknowledgeAlertsModal extends Component {
           columns = insertGroupByColumn(groupBy);
           break;
         case MONITOR_TYPE.DOC_LEVEL:
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           columns = _.cloneDeep(queryColumns);
           columns.splice(
             0,

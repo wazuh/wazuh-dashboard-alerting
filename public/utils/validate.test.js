@@ -13,9 +13,16 @@ import {
   validateMonthlyDay,
   ILLEGAL_CHARACTERS,
   validateIndex,
+  validateMonitorIndex,
+  supportsIndexPatterns,
+  containsIndexPatternSyntax,
+  getIndexPatternError,
+  validateActiveResponseInterval,
+  validateActiveResponseUnit,
   isIndexPatternQueryValid,
   requiredNumber,
 } from './validate';
+import { MONITOR_TYPE } from './constants';
 import { FORMIK_INITIAL_VALUES } from '../pages/CreateMonitor/containers/CreateMonitor/utils/constants';
 import { TRIGGER_TYPE } from '../pages/CreateTrigger/containers/CreateTrigger/utils/constants';
 
@@ -202,6 +209,68 @@ describe('validateIndex', () => {
     const invalidText = `One of your inputs contains invalid characters or spaces. Please omit: ${illegalCharacters}`;
     expect(validateIndex([{ label: 'valid- index$' }])).toBe(invalidText);
   });
+
+  // Wazuh: document level monitors reject index patterns in the backend
+  test('returns error string if a doc level monitor uses an index pattern', () => {
+    [MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].forEach((monitorType) => {
+      expect(validateIndex([{ label: 'wazuh-findings-v5-*' }], monitorType)).toBe(
+        getIndexPatternError(monitorType)
+      );
+      expect(validateIndex([{ label: '<wazuh-alerts-{now/d}>' }], monitorType)).toBe(
+        getIndexPatternError(monitorType)
+      );
+    });
+  });
+
+  test('returns undefined if a doc level monitor uses a concrete index', () => {
+    expect(
+      validateIndex([{ label: 'wazuh-findings-v5-000001' }], MONITOR_TYPE.DOC_LEVEL)
+    ).toBeUndefined();
+  });
+
+  test('allows index patterns for monitor types that support them', () => {
+    [MONITOR_TYPE.QUERY_LEVEL, MONITOR_TYPE.BUCKET_LEVEL, undefined].forEach((monitorType) => {
+      expect(validateIndex([{ label: 'wazuh-findings-v5-*' }], monitorType)).toBeUndefined();
+    });
+  });
+});
+
+describe('validateMonitorIndex', () => {
+  test('binds the monitor type to the validator', () => {
+    expect(validateMonitorIndex(MONITOR_TYPE.DOC_LEVEL)([{ label: 'wazuh-alerts-*' }])).toBe(
+      getIndexPatternError(MONITOR_TYPE.DOC_LEVEL)
+    );
+    expect(
+      validateMonitorIndex(MONITOR_TYPE.QUERY_LEVEL)([{ label: 'wazuh-alerts-*' }])
+    ).toBeUndefined();
+  });
+});
+
+describe('supportsIndexPatterns', () => {
+  test('returns false only for doc level monitor types', () => {
+    expect(supportsIndexPatterns(MONITOR_TYPE.DOC_LEVEL)).toBe(false);
+    expect(supportsIndexPatterns(MONITOR_TYPE.ACTIVE_RESPONSE)).toBe(false);
+    expect(supportsIndexPatterns(MONITOR_TYPE.QUERY_LEVEL)).toBe(true);
+    expect(supportsIndexPatterns(MONITOR_TYPE.BUCKET_LEVEL)).toBe(true);
+    expect(supportsIndexPatterns(MONITOR_TYPE.CLUSTER_METRICS)).toBe(true);
+  });
+});
+
+describe('containsIndexPatternSyntax', () => {
+  test('returns true for wildcards, date math, _all and empty names', () => {
+    expect(containsIndexPatternSyntax('wazuh-findings-v5-*')).toBe(true);
+    expect(containsIndexPatternSyntax('wazuh-alerts-?')).toBe(true);
+    expect(containsIndexPatternSyntax('<wazuh-alerts-{now/d}>')).toBe(true);
+    expect(containsIndexPatternSyntax('_all')).toBe(true);
+    expect(containsIndexPatternSyntax('')).toBe(true);
+    expect(containsIndexPatternSyntax(undefined)).toBe(true);
+  });
+
+  test('returns false for a single index name', () => {
+    expect(containsIndexPatternSyntax('wazuh-findings-v5-000001')).toBe(false);
+    // Dots are valid in an index name, so they must not be flagged as a pattern
+    expect(containsIndexPatternSyntax('wazuh-alerts-4.x-2026.08.03')).toBe(false);
+  });
 });
 
 describe('requiredNumber', () => {
@@ -235,5 +304,45 @@ describe('requiredNumber', () => {
 
   test('returns error text for null value', () => {
     expect(requiredNumber(null)).toBe('Requires numerical value.');
+  });
+});
+
+// Wazuh: Active Response monitors run at most once per minute
+describe('validateActiveResponseInterval', () => {
+  test('caps the interval at 60 seconds', () => {
+    expect(validateActiveResponseInterval('SECONDS')(1)).toBeUndefined();
+    expect(validateActiveResponseInterval('SECONDS')(60)).toBeUndefined();
+    expect(validateActiveResponseInterval('SECONDS')(61)).toBe(
+      'Must be between 1 and 60 seconds.'
+    );
+  });
+
+  test('allows a single minute, and nothing longer', () => {
+    expect(validateActiveResponseInterval('MINUTES')(1)).toBeUndefined();
+    expect(validateActiveResponseInterval('MINUTES')(2)).toBe(
+      'Must be between 1 and 1 minutes.'
+    );
+  });
+
+  test('rejects non positive integers', () => {
+    [0, -1, 1.5, undefined].forEach((value) => {
+      expect(validateActiveResponseInterval('SECONDS')(value)).toBe(
+        'Must be between 1 and 60 seconds.'
+      );
+    });
+  });
+
+  test('rejects a unit the schedule cannot be expressed in', () => {
+    expect(validateActiveResponseInterval('HOURS')(1)).toBe(
+      'Must be one of seconds, minutes.'
+    );
+  });
+});
+
+describe('validateActiveResponseUnit', () => {
+  test('accepts seconds and minutes only', () => {
+    expect(validateActiveResponseUnit('SECONDS')).toBeUndefined();
+    expect(validateActiveResponseUnit('MINUTES')).toBeUndefined();
+    expect(validateActiveResponseUnit('DAYS')).toBe('Must be one of seconds, minutes.');
   });
 });

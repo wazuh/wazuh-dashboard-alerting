@@ -81,6 +81,7 @@ exports[`MonitorIndex renders 1`] = `
       },
     }
   }
+  validateOnChange={false}
 >
   <MonitorIndex
     httpClient={[MockFunction]}
@@ -95,6 +96,7 @@ exports[`MonitorIndex renders 1`] = `
       inputProps={
         Object {
           "async": true,
+          "comboBoxRef": [Function],
           "data-test-subj": "indicesComboBox",
           "delimiter": ",",
           "isClearable": true,
@@ -258,7 +260,7 @@ exports[`MonitorIndex renders 1`] = `
                 "validateField": [Function],
                 "validateForm": [Function],
                 "validateOnBlur": true,
-                "validateOnChange": true,
+                "validateOnChange": false,
                 "validateOnMount": false,
                 "values": Object {
                   "aggregationType": "count",
@@ -524,7 +526,7 @@ exports[`MonitorIndex renders 1`] = `
                         "validateField": [Function],
                         "validateForm": [Function],
                         "validateOnBlur": true,
-                        "validateOnChange": true,
+                        "validateOnChange": false,
                         "validateOnMount": false,
                         "values": Object {
                           "aggregationType": "count",
@@ -609,6 +611,7 @@ exports[`MonitorIndex renders 1`] = `
                     inputProps={
                       Object {
                         "async": true,
+                        "comboBoxRef": [Function],
                         "data-test-subj": "indicesComboBox",
                         "delimiter": ",",
                         "isClearable": true,

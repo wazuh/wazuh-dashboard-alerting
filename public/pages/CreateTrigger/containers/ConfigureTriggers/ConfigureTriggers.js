@@ -5,6 +5,7 @@
 
 import React from 'react';
 import {
+  EuiCallOut,
   EuiHorizontalRule,
   EuiSpacer,
   EuiBadge,
@@ -23,7 +24,9 @@ import {
 } from '../../../MonitorDetails/containers/Triggers/Triggers';
 import DefineTrigger from '../DefineTrigger';
 import { MONITOR_TYPE, SEARCH_TYPE } from '../../../../utils/constants';
-import { getPathsPerDataType } from '../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
+// WAZUH
+// import { getPathsPerDataType } from '../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
+import { getPathsPerDataTypeWithDynamicTemplates } from '../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
 import monitorToFormik from '../../../CreateMonitor/containers/CreateMonitor/utils/monitorToFormik';
 import { buildRequest } from '../../../CreateMonitor/containers/DefineMonitor/utils/searchRequests';
 import { backendErrorNotification, inputLimitText } from '../../../../utils/helpers';
@@ -206,7 +209,9 @@ class ConfigureTriggers extends React.Component {
     const indices = this.props.monitor.inputs[0].search?.indices || [];
     try {
       const mappings = await this.queryMappings(indices);
-      const dataTypes = getPathsPerDataType(mappings);
+      // WAZUH
+      // const dataTypes = getPathsPerDataType(mappings);
+      const dataTypes = getPathsPerDataTypeWithDynamicTemplates(mappings);
       this.setState({ dataTypes });
     } catch (err) {
       console.error('There was an error getting mappings for query', err);
@@ -365,6 +370,7 @@ class ConfigureTriggers extends React.Component {
       switch (monitorValues.monitor_type) {
         case MONITOR_TYPE.BUCKET_LEVEL:
           return this.renderDefineBucketLevelTrigger(arrayHelpers, index);
+        case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Add Active Response monitor type
         case MONITOR_TYPE.DOC_LEVEL:
           return this.renderDefineDocumentLevelTrigger(arrayHelpers, index);
         case MONITOR_TYPE.COMPOSITE_LEVEL:
@@ -422,7 +428,8 @@ class ConfigureTriggers extends React.Component {
   };
 
   render() {
-    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues } = this.props;
+    const { triggerArrayHelpers, triggerValues, flyoutMode, monitorValues, errors, submitCount } =
+      this.props;
     const { ContentPanelStructure } = this.state;
     const monitorType = monitorValues.monitor_type;
     const isComposite = monitorType === MONITOR_TYPE.COMPOSITE_LEVEL;
@@ -435,6 +442,7 @@ class ConfigureTriggers extends React.Component {
     const numOfTriggers = _.get(triggerValues, 'triggerDefinitions', []).length;
     const displayAddTriggerButton = numOfTriggers > 0;
     const disableAddTriggerButton = numOfTriggers >= maxTriggers;
+    const activeResponseActionError = submitCount > 0 && errors?.noActiveResponseAction;
 
     return (
       <ContentPanelStructure
@@ -449,6 +457,17 @@ class ConfigureTriggers extends React.Component {
         bodyStyles={{ paddingLeft: '0px', padding: '10px' }}
         horizontalRuleClassName={'accordion-horizontal-rule'}
       >
+        {activeResponseActionError && (
+          <div id="noActiveResponseAction" tabIndex={-1} style={{ outline: 'none' }}>
+            <EuiCallOut
+              title={activeResponseActionError}
+              color="danger"
+              iconType="alert"
+              size="s"
+            />
+            <EuiSpacer size="s" />
+          </div>
+        )}
         {this.renderTriggers(triggerArrayHelpers)}
         {flyoutMode && !disableAddTriggerButton && (
           <AddTriggerButton

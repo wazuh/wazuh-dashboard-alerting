@@ -50,7 +50,8 @@ export const columns = [
   },
   {
     field: 'lastNotificationTime',
-    name: 'Last notification time',
+    // Wazuh: an Active Response monitor executes a command instead of sending a notification
+    name: 'Last action time',
     sortable: true,
     truncateText: false,
     render: renderTime,

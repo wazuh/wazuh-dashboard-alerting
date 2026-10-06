@@ -35,7 +35,31 @@ export const MONITOR_TYPE = {
   DOC_LEVEL: 'doc_level_monitor',
   COMPOSITE_LEVEL: 'composite',
   PPL: 'ppl_monitor',
+  ACTIVE_RESPONSE: 'active_response_monitor', // Wazuh
 };
+
+// Wazuh: Prefix shared by every findings index Active Response monitors are allowed to run over
+export const ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX = 'wazuh-findings';
+
+// Wazuh: Index pattern for findings indices used by Active Response monitors
+export const ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN = `${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}*`;
+
+// Wazuh: monitor types that name themselves in the copy of the create monitor form
+export const MONITOR_TYPE_LABEL = Object.freeze({
+  [MONITOR_TYPE.DOC_LEVEL]: 'document level monitors',
+  [MONITOR_TYPE.ACTIVE_RESPONSE]: 'Active Response monitors',
+});
+
+/*
+ * Wazuh: the indexer rejects an Active Response monitor whose schedule is longer than 60 seconds
+ * ("Active response monitor schedule must be <= 60 seconds"), or that is not an interval schedule.
+ */
+export const ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS = 60;
+
+export const ACTIVE_RESPONSE_MAX_INTERVAL = Object.freeze({
+  SECONDS: ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS,
+  MINUTES: ACTIVE_RESPONSE_MAX_INTERVAL_SECONDS / 60,
+});
 
 export const DESTINATION_ACTIONS = {
   UPDATE_DESTINATION: 'update-destination',
@@ -58,7 +82,7 @@ export const DATA_TYPES = {
 };
 
 export const OS_AD_PLUGIN = 'opensearch-anomaly-detection';
-export const OS_NOTIFICATION_PLUGIN = 'opensearch-notifications';
+export const OS_NOTIFICATION_PLUGIN = 'wazuh-indexer-notifications'; // Wazuh
 export const OPENSEARCH_DASHBOARDS_AD_PLUGIN = 'anomaly-detection-dashboards';
 
 // TODO: Update to 3.7.0 if it's confirmed that it should be supported on >=3.7.0
@@ -84,6 +108,7 @@ export const BACKEND_CHANNEL_TYPE = Object.freeze({
   CUSTOM_WEBHOOK: 'webhook',
   SES: 'ses',
   SNS: 'sns',
+  ACTIVE_RESPONSE: 'active_response', // Wazuh
 });
 
 export const CHANNEL_TYPE = Object.freeze({
@@ -93,6 +118,7 @@ export const CHANNEL_TYPE = Object.freeze({
   [BACKEND_CHANNEL_TYPE.CUSTOM_WEBHOOK]: 'Custom webhook',
   [BACKEND_CHANNEL_TYPE.SES]: 'Amazon SES',
   [BACKEND_CHANNEL_TYPE.SNS]: 'Amazon SNS',
+  [BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE]: 'Active Response', // Wazuh
 });
 
 export const DEFAULT_PREVIEW_ERROR_MSG = 'There was a problem previewing the detector.';
@@ -108,6 +134,7 @@ export const monitorTypesForComposition = new Set([
   MONITOR_TYPE.BUCKET_LEVEL,
   MONITOR_TYPE.DOC_LEVEL,
   MONITOR_TYPE.QUERY_LEVEL,
+  MONITOR_TYPE.ACTIVE_RESPONSE, // Wazuh
 ]);
 
 export const PLUGIN_AUGMENTATION_ENABLE_SETTING = 'visualization:enablePluginAugmentation';
@@ -149,3 +176,11 @@ export const SEVERITY_OPTIONS = [
     color: { background: paletteColors[0], text: 'white' },
   },
 ];
+
+// Wazuh
+export const MANAGED_CHANNEL_CATEGORY = Object.freeze({
+  NOTIFICATION: 'notification', // OSD notifications channels
+  ACTIVE_RESPONSE: BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE,
+});
+
+export const MANAGED_CHANNEL_TYPES = Object.freeze([BACKEND_CHANNEL_TYPE.ACTIVE_RESPONSE]);

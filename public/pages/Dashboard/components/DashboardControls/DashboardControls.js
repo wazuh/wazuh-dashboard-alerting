@@ -50,6 +50,7 @@ const DashboardControls = ({
   let supportedStateOptions = stateOptions;
   switch (monitorType) {
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       const supportedStates = [ALERT_STATE.ACKNOWLEDGED, ALERT_STATE.ACTIVE, ALERT_STATE.ERROR];
       supportedStateOptions = stateOptions.filter((state) =>
         _.includes(supportedStates, state.value)

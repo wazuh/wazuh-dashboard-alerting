@@ -5,7 +5,12 @@
 
 import _ from 'lodash';
 import { INDEX, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../utils/constants';
-import { MONITOR_TYPE } from './constants';
+import {
+  ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX,
+  ACTIVE_RESPONSE_MAX_INTERVAL,
+  MONITOR_TYPE,
+  MONITOR_TYPE_LABEL,
+} from './constants';
 import { TRIGGER_TYPE } from '../pages/CreateTrigger/containers/CreateTrigger/utils/constants';
 import { getDataSourceQueryObj } from '../pages/utils/helpers';
 
@@ -35,6 +40,7 @@ export const validateActionName = (monitor, trigger) => (value) => {
       actions = _.get(trigger, `${TRIGGER_TYPE.BUCKET_LEVEL}.actions`, []);
       break;
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       actions = _.get(trigger, `${TRIGGER_TYPE.DOC_LEVEL}.actions`, []);
       break;
   }
@@ -140,6 +146,24 @@ export const validatePositiveInteger = (value) => {
   if (!Number.isInteger(value) || value < 1) return 'Must be a positive integer.';
 };
 
+/**
+ * Wazuh: the indexer caps an Active Response monitor schedule at 60 seconds, so the largest
+ * interval depends on the unit the schedule is expressed in.
+ */
+export const validateActiveResponseInterval = (unit) => (value) => {
+  const maxInterval = ACTIVE_RESPONSE_MAX_INTERVAL[unit];
+  if (!maxInterval) return validateActiveResponseUnit(unit);
+  if (!Number.isInteger(value) || value < 1 || value > maxInterval)
+    return `Must be between 1 and ${maxInterval} ${unit.toLowerCase()}.`;
+};
+
+export const validateActiveResponseUnit = (value) => {
+  if (!ACTIVE_RESPONSE_MAX_INTERVAL[value])
+    return `Must be one of ${Object.keys(ACTIVE_RESPONSE_MAX_INTERVAL)
+      .map((unit) => unit.toLowerCase())
+      .join(', ')}.`;
+};
+
 export const validateUnit = (value) => {
   if (!['MINUTES', 'HOURS', 'DAYS'].includes(value)) return 'Must be one of minutes, hours, days.';
 };
@@ -157,7 +181,37 @@ export const validateDetector = (detectorId, selectedDetector) => {
     return 'Must choose detector which has features.';
 };
 
-export const validateIndex = (options) => {
+/**
+ * Wazuh: an index name resolves to more than one index when it uses a wildcard
+ * (`*`, `?`), date math (`<index-{now/d}>`) or `_all`. Those characters are not
+ * allowed in a concrete index name, so they are the only pattern forms that can
+ * be typed here.
+ */
+export function containsIndexPatternSyntax(indexName) {
+  if (!indexName || indexName === '_all') return true;
+  if (indexName.startsWith('<') && indexName.endsWith('>')) return true; // Date math
+  return indexName.includes('*') || indexName.includes('?');
+}
+
+/**
+ * Wazuh: monitor types the backend handles as document level monitors, which do
+ * not accept index patterns.
+ */
+const MONITOR_TYPES_WITHOUT_INDEX_PATTERN_SUPPORT = [
+  MONITOR_TYPE.DOC_LEVEL,
+  MONITOR_TYPE.ACTIVE_RESPONSE,
+];
+
+export const supportsIndexPatterns = (monitorType) =>
+  !MONITOR_TYPES_WITHOUT_INDEX_PATTERN_SUPPORT.includes(monitorType);
+
+// Wazuh: name the monitor type the user actually selected
+export const getIndexPatternError = (monitorType) =>
+  `Index patterns are not supported for ${
+    MONITOR_TYPE_LABEL[monitorType] || 'these monitors'
+  }. Select a single index instead of a wildcard (*) or date math pattern.`;
+
+export const validateIndex = (options, monitorType) => {
   if (!Array.isArray(options)) return 'Must specify an index.';
   if (!options.length) return 'Must specify an index.';
 
@@ -165,6 +219,56 @@ export const validateIndex = (options) => {
   const pattern = options.map(({ value, label }) => value || label).join('');
   if (!isIndexPatternQueryValid(pattern, ILLEGAL_CHARACTERS)) {
     return `One of your inputs contains invalid characters or spaces. Please omit: ${illegalCharacters}`;
+  }
+
+  // Wazuh: fail fast on index patterns the backend rejects for document level monitors.
+  if (
+    !supportsIndexPatterns(monitorType) &&
+    options.some(({ value, label }) => containsIndexPatternSyntax(value || label))
+  ) {
+    return getIndexPatternError(monitorType);
+  }
+};
+
+/**
+ * Wazuh: builds a Formik field-level validator bound to the monitor type, so the
+ * index restrictions of document level monitors are enforced in the form.
+ */
+export const validateMonitorIndex = (monitorType) => (options) =>
+  validateIndex(options, monitorType);
+
+// Wazuh: an index belongs to the Wazuh findings indices when it starts with the findings prefix.
+export const isActiveResponseFindingsIndex = (label = '') =>
+  label.trim().toLowerCase().startsWith(ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX);
+
+/**
+ * Wazuh: Active Response monitors can only run over an existing Wazuh findings index. Being
+ * document level monitors they do not support index patterns either, and a typed index is applied
+ * as it was typed, so the value itself has to be validated to tell the user that what they typed
+ * is not usable instead of letting them believe it was accepted.
+ *
+ * @param indexExists resolves whether an index can be monitored. Existence is asked for instead of
+ * matched against the options the index field shows, which only hold the last search results.
+ */
+export const validateActiveResponseIndex = (indexExists) => async (options) => {
+  // The findings and pattern messages below are more actionable than the generic document level
+  // one, so the monitor type is deliberately not passed here.
+  const genericError = validateIndex(options);
+  if (genericError) return genericError;
+
+  const indices = options.map(({ value, label }) => value || label);
+
+  if (!indices.every(isActiveResponseFindingsIndex)) {
+    return `Active Response monitors can only use Wazuh findings indices (must start with "${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}").`;
+  }
+
+  if (indices.some((index) => index.includes('*'))) {
+    return 'Index patterns are not supported. Select a single findings index.';
+  }
+
+  const existence = await Promise.all(indices.map(indexExists));
+  if (existence.some((exists) => !exists)) {
+    return 'Index not found. Select one of the available findings indices.';
   }
 };
 
@@ -179,6 +283,31 @@ export function isIndexPatternQueryValid(pattern, illegalCharacters) {
 
   return !illegalCharacters.some((char) => pattern.includes(char));
 }
+
+/**
+ * Wazuh: validate that a date string is in a valid format
+ * (ISO 8601, epoch ms, or OpenSearch date math) and can be parsed by OpenSearch.
+ */
+export const validateDate = (value) => {
+  if (!value) return 'Required.';
+  // OpenSearch date math: now, now-1d, now+1h/h, now/d, etc.
+  if (/^now([+-]\d+[smhdwMy])?(\/[smhdwMy])?$/.test(value)) return undefined;
+  // Epoch milliseconds or any date string parseable by the runtime (ISO 8601, RFC 2822, etc.)
+  if (!isNaN(Date.parse(value))) return undefined;
+  return 'Invalid date. Use ISO 8601 (2024-01-15T15:30:00), epoch ms, or date math (now-1d).';
+};
+
+/**
+ * Wazuh: validate that an IP address is in a valid format (IPv4 or IPv6) and can be parsed by OpenSearch.
+ */
+export const validateIp = (value) => {
+  if (!value) return 'Required.';
+  const ipv4 =
+    /^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)(\/(\d|[1-2]\d|3[0-2]))?$/;
+  const ipv6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}(\/\d{1,3})?$/;
+  if (ipv4.test(value) || ipv6.test(value)) return undefined;
+  return 'Invalid IP address. Use IPv4 (192.168.1.1) or IPv6 format.';
+};
 
 export function validateExtractionQuery(value) {
   try {
