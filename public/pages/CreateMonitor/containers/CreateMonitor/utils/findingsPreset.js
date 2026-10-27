@@ -15,7 +15,10 @@ import {
   MONITOR_TYPE,
   SEARCH_TYPE,
 } from '../../../../../utils/constants';
-import { FORMIK_INITIAL_DOCUMENT_LEVEL_QUERY_VALUES } from './constants';
+import {
+  DEFAULT_DOCUMENT_LEVEL_QUERY,
+  FORMIK_INITIAL_DOCUMENT_LEVEL_QUERY_VALUES,
+} from './constants';
 import { AND_OR_CONDITION_OPTIONS } from '../../../../CreateTrigger/utils/constants';
 import { getInitialTriggerValues } from '../../../../CreateTrigger/components/AddTriggerButton/utils';
 import { getInitialActionValues } from '../../../../CreateTrigger/components/AddActionButton/enhanced-utils';
@@ -81,7 +84,22 @@ export const getFindingsPresetValues = ({ channelId = '', channelName } = {}) =>
     monitor_type: MONITOR_TYPE.DOC_LEVEL,
     searchType: SEARCH_TYPE.GRAPH,
     index: [{ label: FINDINGS_PRESET_INDEX }],
+    // The extraction query editor starts from it, as when Per document monitor is selected.
+    query: DEFAULT_DOCUMENT_LEVEL_QUERY,
     queries,
     triggerDefinitions: [trigger],
   };
 };
+
+/**
+ * Puts the preset back on a form whose monitor type was changed, which removes the index, the
+ * queries and the trigger of the preset. The name, the schedule and the rest of the user's changes
+ * are kept.
+ *
+ * @param {object} values current form values
+ * @param {object} presetValues values returned by getFindingsPresetValues
+ */
+export const restoreFindingsPreset = (values, presetValues) => ({
+  ...values,
+  ..._.omit(presetValues, 'name'),
+});

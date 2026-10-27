@@ -10,8 +10,9 @@ import {
   getFindingsPresetChannelId,
   getFindingsPresetMonitorName,
   getFindingsPresetValues,
+  restoreFindingsPreset,
 } from './findingsPreset';
-import { FORMIK_INITIAL_VALUES } from './constants';
+import { FORMIK_INITIAL_VALUES, MATCH_ALL_QUERY } from './constants';
 import { formikToMonitor } from './formikToMonitor';
 import { formikToTrigger } from '../../../../CreateTrigger/containers/CreateTrigger/utils/formikToTrigger';
 import { MONITOR_TYPE, SEARCH_TYPE } from '../../../../../utils/constants';
@@ -95,5 +96,32 @@ describe('getFindingsPresetValues', () => {
     expect(values.name).toBe('High and critical findings');
     expect(action.destination_id).toBe('');
     expect(action.id).toMatch(/^notification/);
+  });
+});
+
+describe('restoreFindingsPreset', () => {
+  test('puts the preset back and keeps the name and the schedule', () => {
+    const presetValues = getFindingsPresetValues({ channelId: 'abc', channelName: 'SOC Slack' });
+    // What selecting the Per query monitor card leaves in the form, after the user edited it.
+    const changedValues = {
+      ..._.cloneDeep(FORMIK_INITIAL_VALUES),
+      ...presetValues,
+      name: 'Edited name',
+      period: { interval: 5, unit: 'MINUTES' },
+      monitor_type: MONITOR_TYPE.QUERY_LEVEL,
+      searchType: SEARCH_TYPE.GRAPH,
+      index: [],
+      query: MATCH_ALL_QUERY,
+      triggerDefinitions: [],
+    };
+
+    const monitor = toMonitor(restoreFindingsPreset(changedValues, presetValues));
+    const presetMonitor = toMonitor(presetValues);
+
+    expect(monitor.name).toBe('Edited name');
+    expect(monitor.schedule).toEqual({ period: { interval: 5, unit: 'MINUTES' } });
+    expect(monitor.monitor_type).toBe(MONITOR_TYPE.DOC_LEVEL);
+    expect(monitor.inputs).toEqual(presetMonitor.inputs);
+    expect(monitor.triggers).toEqual(presetMonitor.triggers);
   });
 });

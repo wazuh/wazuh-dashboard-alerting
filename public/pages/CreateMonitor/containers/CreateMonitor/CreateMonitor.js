@@ -37,8 +37,13 @@ import { triggerToFormik } from '../../../CreateTrigger/containers/CreateTrigger
 import { triggerToFormikPpl } from '../../../CreateTrigger/containers/CreateTrigger/utils/triggerToFormikPpl';
 import WorkflowDetails from '../WorkflowDetails/WorkflowDetails';
 import { getInitialValues, getPlugins, submit } from './utils/helpers';
-import { getFindingsPresetChannelId, getFindingsPresetValues } from './utils/findingsPreset'; // Wazuh
+import {
+  getFindingsPresetChannelId,
+  getFindingsPresetValues,
+  restoreFindingsPreset,
+} from './utils/findingsPreset'; // Wazuh
 import FindingsPresetCallOut from '../../components/FindingsPresetCallOut'; // Wazuh
+import FindingsPresetDiscardedCallOut from '../../components/FindingsPresetDiscardedCallOut'; // Wazuh
 import { submitPPL } from './utils/pplAlertingHelpers';
 import {
   getPerformanceModal,
@@ -148,12 +153,14 @@ export default class CreateMonitor extends Component {
     } catch (error) {
       // The channel might have been deleted, the callout asks the user to select another one.
     }
+    // Kept to restore the preset when the user changes the monitor type, which removes it.
+    const presetValues = getFindingsPresetValues({
+      channelId: channelName ? channelId : '',
+      channelName,
+    });
     this.setState(({ initialValues }) => ({
-      initialValues: {
-        ...initialValues,
-        ...getFindingsPresetValues({ channelId: channelName ? channelId : '', channelName }),
-      },
-      findingsPreset: { channelId, channelName, channelMuted, loading: false },
+      initialValues: { ...initialValues, ...presetValues },
+      findingsPreset: { channelId, channelName, channelMuted, presetValues, loading: false },
     }));
   };
 
@@ -569,7 +576,17 @@ export default class CreateMonitor extends Component {
           validateOnChange={false}
           enableReinitialize={true}
         >
-          {({ values, errors, handleSubmit, isSubmitting, isValid, touched, setFieldValue, submitCount }) => {
+          {({
+            values,
+            errors,
+            handleSubmit,
+            isSubmitting,
+            isValid,
+            touched,
+            setFieldValue,
+            setValues,
+            submitCount,
+          }) => {
             const isComposite = values.monitor_type === MONITOR_TYPE.COMPOSITE_LEVEL;
             const isPpl = values.monitor_type === MONITOR_TYPE.PPL;
 
@@ -582,13 +599,22 @@ export default class CreateMonitor extends Component {
                   <EuiSpacer />
                 </PageHeader>
 
-                {/* Wazuh: the callout describes the preset, so it goes away with its monitor type */}
-                {findingsPreset && values.monitor_type === MONITOR_TYPE.DOC_LEVEL && (
+                {/* Wazuh: changing the monitor type removes the preset, so offer to restore it */}
+                {findingsPreset && (
                   <>
-                    <FindingsPresetCallOut
-                      channelName={findingsPreset.channelName}
-                      channelMuted={findingsPreset.channelMuted}
-                    />
+                    {values.monitor_type === MONITOR_TYPE.DOC_LEVEL ? (
+                      <FindingsPresetCallOut
+                        channelName={findingsPreset.channelName}
+                        channelMuted={findingsPreset.channelMuted}
+                      />
+                    ) : (
+                      <FindingsPresetDiscardedCallOut
+                        channelName={findingsPreset.channelName}
+                        onRestore={() =>
+                          setValues(restoreFindingsPreset(values, findingsPreset.presetValues))
+                        }
+                      />
+                    )}
                     <EuiSpacer />
                   </>
                 )}
