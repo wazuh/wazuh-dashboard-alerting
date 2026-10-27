@@ -6,6 +6,7 @@
 | ----- | ------- |
 | [#13](https://github.com/wazuh/wazuh-dashboard-alerting/issues/13) | Added debounce to Document Level Query text inputs |
 | [#31](https://github.com/wazuh/wazuh-dashboard-alerting/issues/31) | Added the "Active Response" monitor type |
+| [#9436](https://github.com/wazuh/wazuh-dashboard-plugins/issues/9436) | Added a Create monitor preset, opened from a notification channel, that sends new high and critical findings to that channel |
 
 ### Changed
 

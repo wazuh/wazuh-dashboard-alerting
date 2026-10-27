@@ -5,17 +5,20 @@
 
 import React from 'react';
 import { shallow } from 'enzyme';
+import { Formik } from 'formik';
 import { httpServiceMock } from '../../../../../../../src/core/public/mocks';
 
 import CreateMonitor from './CreateMonitor';
 import { historyMock, httpClientMock } from '../../../../../test/mocks';
 import { FORMIK_INITIAL_VALUES } from './utils/constants';
 import { AlertingFakes, setupCoreStart } from '../../../../../test/utils/helpers';
-import { SEARCH_TYPE } from '../../../../utils/constants';
+import { MONITOR_TYPE, SEARCH_TYPE } from '../../../../utils/constants';
 import { TRIGGER_TYPE } from '../../../CreateTrigger/containers/CreateTrigger/utils/constants';
 import { setClient, setNotifications } from '../../../../services';
 import { formikToMonitor } from './utils/formikToMonitor';
 import coreMock from '../../../../../test/mocks/CoreMock';
+import FindingsPresetCallOut from '../../components/FindingsPresetCallOut';
+import FindingsPresetDiscardedCallOut from '../../components/FindingsPresetDiscardedCallOut';
 
 const alertingFakes = new AlertingFakes('CreateMonitor random seed');
 
@@ -76,6 +79,113 @@ describe('CreateMonitor', () => {
     expect(wrapper.instance().state.initialValues.name).toBe('Sample-Monitor');
     expect(wrapper.instance().state.initialValues.searchType).toBe(SEARCH_TYPE.AD);
     expect(wrapper.instance().state.initialValues.detectorId).toBe('randomId');
+  });
+
+  // Wazuh
+  describe('findings preset', () => {
+    const presetLocation = { ...location, search: '?preset=findings&channelId=channel_id' };
+    const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+    const renderWithChannel = (getChannel, props = {}) =>
+      shallow(
+        <CreateMonitor
+          httpClient={httpClientMock}
+          history={historyMock}
+          setFlyout={setFlyout}
+          match={match}
+          location={presetLocation}
+          notificationService={{ getChannel }}
+          {...props}
+        />
+      );
+
+    test('holds the form until the channel is known, then fills it in', async () => {
+      const getChannel = jest.fn().mockResolvedValue({ name: 'SOC Slack', is_enabled: true });
+      const wrapper = renderWithChannel(getChannel);
+      expect(wrapper.find('[data-test-subj="findingsPresetLoading"]')).toHaveLength(1);
+
+      await flushPromises();
+
+      const { initialValues, findingsPreset } = wrapper.instance().state;
+      expect(getChannel).toHaveBeenCalledWith('channel_id');
+      expect(findingsPreset).toMatchObject({
+        channelId: 'channel_id',
+        channelName: 'SOC Slack',
+        channelMuted: false,
+        loading: false,
+      });
+      expect(initialValues.name).toBe('SOC Slack: high and critical findings');
+      expect(initialValues.monitor_type).toBe('doc_level_monitor');
+      expect(initialValues.triggerDefinitions[0].actions[0].destination_id).toBe('channel_id');
+      expect(wrapper.find('[data-test-subj="findingsPresetLoading"]')).toHaveLength(0);
+    });
+
+    test('flags a muted channel', async () => {
+      const wrapper = renderWithChannel(
+        jest.fn().mockResolvedValue({ name: 'SOC Slack', is_enabled: false })
+      );
+
+      await flushPromises();
+
+      expect(wrapper.instance().state.findingsPreset.channelMuted).toBe(true);
+    });
+
+    test('leaves the channel empty when it was not found', async () => {
+      const wrapper = renderWithChannel(jest.fn().mockRejectedValue(new Error('Not found')));
+
+      await flushPromises();
+
+      const { initialValues, findingsPreset } = wrapper.instance().state;
+      expect(findingsPreset.channelName).toBeUndefined();
+      expect(initialValues.name).toBe('High and critical findings');
+      expect(initialValues.triggerDefinitions[0].actions[0].destination_id).toBe('');
+    });
+
+    test('offers to restore the preset when the monitor type changes', async () => {
+      const wrapper = renderWithChannel(
+        jest.fn().mockResolvedValue({ name: 'SOC Slack', is_enabled: true })
+      );
+      await flushPromises();
+      const { initialValues } = wrapper.instance().state;
+      const renderForm = (values, setValues = jest.fn()) =>
+        wrapper.find(Formik).renderProp('children')({ values, errors: {}, touched: {}, setValues });
+
+      const presetForm = renderForm(initialValues);
+      expect(presetForm.find(FindingsPresetCallOut)).toHaveLength(1);
+      expect(presetForm.find(FindingsPresetDiscardedCallOut)).toHaveLength(0);
+
+      // What selecting the Per query monitor card leaves in the form, after a name change.
+      const changedValues = {
+        ...initialValues,
+        name: 'Edited name',
+        monitor_type: MONITOR_TYPE.QUERY_LEVEL,
+        index: [],
+        triggerDefinitions: [],
+      };
+      const setValues = jest.fn();
+      const changedForm = renderForm(changedValues, setValues);
+      expect(changedForm.find(FindingsPresetCallOut)).toHaveLength(0);
+
+      changedForm.find(FindingsPresetDiscardedCallOut).prop('onRestore')();
+
+      expect(setValues).toHaveBeenCalledWith({
+        ...initialValues,
+        name: 'Edited name',
+      });
+    });
+
+    test('is ignored when editing a monitor', () => {
+      const getChannel = jest.fn();
+      const monitor = alertingFakes.randomMonitor();
+      const wrapper = renderWithChannel(getChannel, {
+        edit: true,
+        monitorToEdit: monitor,
+        updateMonitor,
+      });
+
+      expect(wrapper.instance().state.findingsPreset).toBeNull();
+      expect(getChannel).not.toHaveBeenCalled();
+      expect(wrapper.instance().state.initialValues.name).toBe(monitor.name);
+    });
   });
 
   test('uses monitorToEdit as initialValues when editing', () => {

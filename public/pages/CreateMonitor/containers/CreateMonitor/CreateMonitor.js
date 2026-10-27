@@ -5,12 +5,14 @@
 
 import React, { Component, Fragment } from 'react';
 import _ from 'lodash';
+import queryString from 'query-string';
 import { FieldArray, Formik } from 'formik';
 import {
   EuiSmallButton,
   EuiSmallButtonEmpty,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiLoadingSpinner,
   EuiSpacer,
   EuiText,
   EuiFormRow,
@@ -35,6 +37,13 @@ import { triggerToFormik } from '../../../CreateTrigger/containers/CreateTrigger
 import { triggerToFormikPpl } from '../../../CreateTrigger/containers/CreateTrigger/utils/triggerToFormikPpl';
 import WorkflowDetails from '../WorkflowDetails/WorkflowDetails';
 import { getInitialValues, getPlugins, submit } from './utils/helpers';
+import {
+  getFindingsPresetChannelId,
+  getFindingsPresetValues,
+  restoreFindingsPreset,
+} from './utils/findingsPreset'; // Wazuh
+import FindingsPresetCallOut from '../../components/FindingsPresetCallOut'; // Wazuh
+import FindingsPresetDiscardedCallOut from '../../components/FindingsPresetDiscardedCallOut'; // Wazuh
 import { submitPPL } from './utils/pplAlertingHelpers';
 import {
   getPerformanceModal,
@@ -88,7 +97,13 @@ export default class CreateMonitor extends Component {
     // Wazuh: remove the toasts this form raised, so they do not cover the next form's action bar
     this.toastTracker = createToastTracker(props.notifications);
 
+    // Wazuh: a channel opens this form to send findings to it
+    const findingsChannelId = edit
+      ? undefined
+      : getFindingsPresetChannelId(queryString.parse(location.search));
+
     this.state = {
+      findingsPreset: findingsChannelId ? { channelId: findingsChannelId, loading: true } : null,
       plugins: [],
       response: null,
       performanceResponse: null,
@@ -119,7 +134,35 @@ export default class CreateMonitor extends Component {
 
     updatePlugins();
     this.setSchedule();
+    if (this.state.findingsPreset) this.loadFindingsPreset(); // Wazuh
   }
+
+  /**
+   * Wazuh: fill in the findings preset once the name of its channel is known. The form is held
+   * until then, so the monitor name does not change under the user.
+   */
+  loadFindingsPreset = async () => {
+    const { notificationService } = this.props;
+    const { channelId } = this.state.findingsPreset;
+    let channelName;
+    let channelMuted = false;
+    try {
+      const channel = await notificationService.getChannel(channelId);
+      channelName = channel?.name;
+      channelMuted = channel?.is_enabled === false;
+    } catch (error) {
+      // The channel might have been deleted, the callout asks the user to select another one.
+    }
+    // Kept to restore the preset when the user changes the monitor type, which removes it.
+    const presetValues = getFindingsPresetValues({
+      channelId: channelName ? channelId : '',
+      channelName,
+    });
+    this.setState(({ initialValues }) => ({
+      initialValues: { ...initialValues, ...presetValues },
+      findingsPreset: { channelId, channelName, channelMuted, presetValues, loading: false },
+    }));
+  };
 
   resetResponse() {
     this.setState({ response: null, performanceResponse: null });
@@ -512,7 +555,17 @@ export default class CreateMonitor extends Component {
       isDarkMode,
       notificationService,
     } = this.props;
-    const { createModalOpen, initialValues, plugins } = this.state;
+    const { createModalOpen, initialValues, plugins, findingsPreset } = this.state;
+
+    if (findingsPreset?.loading) {
+      return (
+        <EuiFlexGroup justifyContent="center" style={{ padding: '48px 16px' }}>
+          <EuiFlexItem grow={false}>
+            <EuiLoadingSpinner size="xl" data-test-subj="findingsPresetLoading" />
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      );
+    }
 
     return (
       <div style={{ padding: '16px' }}>
@@ -523,7 +576,17 @@ export default class CreateMonitor extends Component {
           validateOnChange={false}
           enableReinitialize={true}
         >
-          {({ values, errors, handleSubmit, isSubmitting, isValid, touched, setFieldValue, submitCount }) => {
+          {({
+            values,
+            errors,
+            handleSubmit,
+            isSubmitting,
+            isValid,
+            touched,
+            setFieldValue,
+            setValues,
+            submitCount,
+          }) => {
             const isComposite = values.monitor_type === MONITOR_TYPE.COMPOSITE_LEVEL;
             const isPpl = values.monitor_type === MONITOR_TYPE.PPL;
 
@@ -535,6 +598,26 @@ export default class CreateMonitor extends Component {
                   </EuiText>
                   <EuiSpacer />
                 </PageHeader>
+
+                {/* Wazuh: changing the monitor type removes the preset, so offer to restore it */}
+                {findingsPreset && (
+                  <>
+                    {values.monitor_type === MONITOR_TYPE.DOC_LEVEL ? (
+                      <FindingsPresetCallOut
+                        channelName={findingsPreset.channelName}
+                        channelMuted={findingsPreset.channelMuted}
+                      />
+                    ) : (
+                      <FindingsPresetDiscardedCallOut
+                        channelName={findingsPreset.channelName}
+                        onRestore={() =>
+                          setValues(restoreFindingsPreset(values, findingsPreset.presetValues))
+                        }
+                      />
+                    )}
+                    <EuiSpacer />
+                  </>
+                )}
 
                 <MonitorDetails
                   values={values}
