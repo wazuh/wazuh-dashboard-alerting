@@ -456,9 +456,9 @@ describe('DocumentLevelMonitor', () => {
         cy.contains(newTriggerName);
       });
 
-      it('with only 1 index', () => {
-        // This test ensures the bug in this issue has been fixed
-        // https://github.com/opensearch-project/alerting-dashboards-plugin/issues/258
+      it('with multiple indices', () => {
+        // Wazuh: per document monitors run over several indices, which upstream restricted to one
+        // in https://github.com/opensearch-project/alerting-dashboards-plugin/issues/258
 
         // Creating the test monitor
         cy.createMonitor(sampleDocumentLevelMonitor);
@@ -476,7 +476,7 @@ describe('DocumentLevelMonitor', () => {
         // Remove the trigger from the monitor as it's not needed for this test case
         cy.contains('Remove trigger', { timeout: 20000 }).click({ force: true });
 
-        // Click on the Index field and type in multiple index names to replicate the bug
+        // Wazuh: click on the Index field and type in multiple index names
         cy.get('#index')
           .click({ force: true })
           .type(`${TESTING_INDEX_A}{enter}${TESTING_INDEX_B}{enter}`, {
@@ -484,10 +484,10 @@ describe('DocumentLevelMonitor', () => {
           })
           .trigger('blur', { force: true });
 
-        // Confirm Index field only contains the expected text
-        cy.get('[data-test-subj="indicesComboBox"]').should('not.have.text', TESTING_INDEX);
-        cy.get('[data-test-subj="indicesComboBox"]').should('not.have.text', TESTING_INDEX_A);
-        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX_B, { timeout: 20000 });
+        // Wazuh: confirm Index field keeps the monitor index and adds the typed ones
+        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX, { timeout: 20000 });
+        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX_A);
+        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX_B);
 
         // Click the save button
         cy.get('button').contains('Save').last().click({ force: true });

@@ -183,7 +183,7 @@ describe('MonitorIndex', () => {
       const wrapper = getMountWrapper({ monitorType });
 
       expect(wrapper.find('.euiFormHelpText').text()).toBe(
-        `${monitorTypeLabel} do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.`
+        `${monitorTypeLabel} do not support index patterns. Specify concrete index names, without wildcards or date math index resolution.`
       );
     });
   });
@@ -236,6 +236,43 @@ describe('MonitorIndex', () => {
     );
   });
 
+  // Wazuh: Active Response and per document monitors run over several indices too
+  test.each([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE])(
+    'selects several indices for %s',
+    async (monitorType) => {
+      const wrapper = getMountWrapper({ monitorType });
+
+      expect(wrapper.find('EuiCompressedComboBox').prop('singleSelection')).toBeFalsy();
+      expect(wrapper.find('EuiCompressedComboBox').prop('placeholder')).toBe('Select indices');
+
+      for (const index of ['wazuh-findings-v5-security', 'wazuh-findings-v5-system-activity']) {
+        typeInComboBox(wrapper, index);
+        await runAllPromises();
+        blurComboBox(wrapper);
+        await runAllPromises();
+      }
+
+      expect(formikProps.values.index).toEqual([
+        { label: 'wazuh-findings-v5-security' },
+        { label: 'wazuh-findings-v5-system-activity' },
+      ]);
+    }
+  );
+
+  test('does not select an index twice', async () => {
+    const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.DOC_LEVEL });
+
+    for (const index of ['logstash-0', 'logstash-0']) {
+      typeInComboBox(wrapper, index);
+      await runAllPromises();
+      blurComboBox(wrapper);
+      await runAllPromises();
+    }
+
+    expect(formikProps.values.index).toEqual([{ label: 'logstash-0' }]);
+  });
+
+  // Wazuh
   describe('Active Response monitors', () => {
     // Only this index exists, so the queries of any other one come back empty.
     const EXISTING_INDEX = 'wazuh-findings-v5-000001';
@@ -261,23 +298,36 @@ describe('MonitorIndex', () => {
       blurComboBox(wrapper);
       await runAllPromises();
       // The typed index is always applied, so that it is never taken for a discarded one.
-      expect(formikProps.values.index.map(({ label }) => label)).toEqual([value]);
+      expect(formikProps.values.index.map(({ label }) => label)).toContain(value);
     };
 
-    test('reject the indices they cannot run over', async () => {
+    test.each([
+      ['logstash-0', 'can only use Wazuh findings indices'],
+      ['wazuh-findings-v5-*', 'Index patterns are not supported'],
+      ['wazuh-findings-v5-000009', 'Index not found: wazuh-findings-v5-000009.'],
+    ])('reject %s, an index they cannot run over', async (index, error) => {
       const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
 
-      await typeAndBlur(wrapper, 'logstash-0');
-      expect(formikProps.errors.index).toMatch('can only use Wazuh findings indices');
+      await typeAndBlur(wrapper, index);
+      expect(formikProps.errors.index).toMatch(error);
+    });
 
-      await typeAndBlur(wrapper, 'wazuh-findings-v5-*');
-      expect(formikProps.errors.index).toMatch('Index patterns are not supported');
-
-      await typeAndBlur(wrapper, 'wazuh-findings-v5-000009');
-      expect(formikProps.errors.index).toMatch('Index not found');
+    test('accept an existing findings index', async () => {
+      const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
 
       await typeAndBlur(wrapper, EXISTING_INDEX);
       expect(formikProps.errors.index).toBeUndefined();
+    });
+
+    test('name the missing index among the selected ones', async () => {
+      const wrapper = getMountWrapper({ monitorType: MONITOR_TYPE.ACTIVE_RESPONSE });
+
+      await typeAndBlur(wrapper, EXISTING_INDEX);
+      await typeAndBlur(wrapper, 'wazuh-findings-v5-000009');
+
+      expect(formikProps.errors.index).toBe(
+        'Index not found: wazuh-findings-v5-000009. Select from the available findings indices.'
+      );
     });
 
     test('clear the error when an index is picked from the options', async () => {

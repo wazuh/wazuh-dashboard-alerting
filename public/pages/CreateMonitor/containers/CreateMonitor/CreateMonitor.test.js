@@ -99,6 +99,13 @@ describe('CreateMonitor', () => {
       );
 
     test('holds the form until the channel is known, then fills it in', async () => {
+      httpClientMock.post.mockResolvedValueOnce({
+        ok: true,
+        resp: [
+          { index: '.ds-wazuh-findings-v5-security-000001' },
+          { index: '.ds-wazuh-findings-v5-system-activity-000001' },
+        ],
+      });
       const getChannel = jest.fn().mockResolvedValue({ name: 'SOC Slack', is_enabled: true });
       const wrapper = renderWithChannel(getChannel);
       expect(wrapper.find('[data-test-subj="findingsPresetLoading"]')).toHaveLength(1);
@@ -115,6 +122,11 @@ describe('CreateMonitor', () => {
       });
       expect(initialValues.name).toBe('SOC Slack: high and critical findings');
       expect(initialValues.monitor_type).toBe('doc_level_monitor');
+      // Every findings category is watched.
+      expect(initialValues.index).toEqual([
+        { label: 'wazuh-findings-v5-security' },
+        { label: 'wazuh-findings-v5-system-activity' },
+      ]);
       expect(initialValues.triggerDefinitions[0].actions[0].destination_id).toBe('channel_id');
       expect(wrapper.find('[data-test-subj="findingsPresetLoading"]')).toHaveLength(0);
     });
@@ -150,7 +162,9 @@ describe('CreateMonitor', () => {
         wrapper.find(Formik).renderProp('children')({ values, errors: {}, touched: {}, setValues });
 
       const presetForm = renderForm(initialValues);
-      expect(presetForm.find(FindingsPresetCallOut)).toHaveLength(1);
+      expect(presetForm.find(FindingsPresetCallOut).prop('indices')).toEqual(
+        initialValues.index.map(({ label }) => label)
+      );
       expect(presetForm.find(FindingsPresetDiscardedCallOut)).toHaveLength(0);
 
       // What selecting the Per query monitor card leaves in the form, after a name change.

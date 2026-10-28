@@ -17,7 +17,12 @@ import {
   validateActiveResponseIndex,
   validateMonitorIndex,
 } from '../../../../utils/validate';
-import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
+import {
+  canAppendWildcard,
+  createReasonableWait,
+  getDataStreamName, // Wazuh
+  getMatchedOptions,
+} from './utils/helpers';
 import {
   ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN,
   MONITOR_TYPE,
@@ -102,35 +107,34 @@ class MonitorIndex extends React.Component {
     }
   }
 
-  onCreateOption(searchValue, selectedOptions, setFieldValue, supportMultipleIndices) {
+  // Wazuh: every monitor type supports several indices, so the typed index is always added to the
+  // selection and `supportMultipleIndices` is no longer received.
+  onCreateOption(searchValue, selectedOptions, setFieldValue) {
     const newOption = { label: searchValue.trim() };
 
     if (!newOption.label) return;
 
+    // Wazuh: an index typed again is already selected, adding it twice would repeat it in the
+    // monitor.
+    if (selectedOptions.some(({ label }) => label === newOption.label)) return;
+
     // Wazuh: the monitor form does not validate on change, so validation is requested explicitly.
-    // Otherwise the error of the index being replaced stays on screen until the next interaction.
-    if (supportMultipleIndices) setFieldValue('index', selectedOptions.concat(newOption), true);
-    else setFieldValue('index', [newOption], true);
+    // Otherwise the error of the previous value stays on screen until the next interaction.
+    setFieldValue('index', selectedOptions.concat(newOption), true);
   }
 
   /**
    * Wazuh: apply the text left in the search input when the combo box loses focus.
    *
    * The combo box only turns typed text into a selection on blur while none of its options is
-   * active, and single selection pickers (Active Response and per document monitors) keep an
-   * option active once one is selected, which silently discarded the typed index.
+   * active, so the typed index could be silently discarded.
    *
    * @returns {boolean} whether the typed text was applied.
    */
-  commitPendingSearchValue(selectedOptions, form, supportMultipleIndices) {
+  commitPendingSearchValue(selectedOptions, form) {
     if (!this.searchValue.trim()) return false;
 
-    this.onCreateOption(
-      this.searchValue,
-      selectedOptions,
-      form.setFieldValue,
-      supportMultipleIndices
-    );
+    this.onCreateOption(this.searchValue, selectedOptions, form.setFieldValue);
 
     // Reset the search input, otherwise the combo box keeps rendering the typed text as invalid
     // instead of the index that was just applied.
@@ -206,14 +210,10 @@ class MonitorIndex extends React.Component {
         const dataStreamAliases = [];
         const dataStreamsSet = new Set();
 
-        // Matches OpenSearch data stream backing indices (e.g., .ds-wazuh-alerts-000001)
-        const DATA_STREAM_BACKING_INDEX_PATTERN = /^\.ds-(.+)-\d+$/;
-        const DATA_STREAM_NAME_GROUP = 1;
-
+        // Wazuh: data streams are listed instead of their backing indices.
         response.resp.forEach(({ health, index: idx, status }) => {
-          const dsMatch = idx.match(DATA_STREAM_BACKING_INDEX_PATTERN);
-          if (dsMatch) {
-            const dsName = dsMatch[DATA_STREAM_NAME_GROUP];
+          const dsName = getDataStreamName(idx);
+          if (dsName) {
             if (!dataStreamsSet.has(dsName)) {
               dataStreamsSet.add(dsName);
               dataStreamAliases.push({ label: dsName });
@@ -350,23 +350,19 @@ class MonitorIndex extends React.Component {
       ? 'You can use a * as a wildcard or date math index resolution in your index pattern'
       : `${_.upperFirst(
           MONITOR_TYPE_LABEL[this.props.monitorType]
-        )} do not support index patterns. Specify a concrete index name, without wildcards or date math index resolution.`;
+        )} do not support index patterns. Specify concrete index names, without wildcards or date math index resolution.`;
 
     // Wazuh: a typed index bypasses the options list, so Active Response monitors validate that the
-    // selected value is an existing findings index. The rest of the monitor types only need the
+    // selected values are existing findings indices. The rest of the monitor types only need the
     // restrictions that come with the monitor type, index patterns among them.
     const indexValidator = isActiveResponse
       ? validateActiveResponseIndex(this.indexExists)
       : validateMonitorIndex(this.props.monitorType);
 
-    let supportMultipleIndices = true;
+    // Wazuh: the per document monitor case, which disabled `supportMultipleIndices`, was removed.
+    // Like Active Response monitors, they fall in the default case.
     let supportsCrossClusterMonitoring = false;
     switch (this.props.monitorType) {
-      case MONITOR_TYPE.ACTIVE_RESPONSE:
-      case MONITOR_TYPE.DOC_LEVEL:
-        supportMultipleIndices = false;
-        supportsCrossClusterMonitoring = false;
-        break;
       case MONITOR_TYPE.BUCKET_LEVEL:
       case MONITOR_TYPE.CLUSTER_METRICS:
       case MONITOR_TYPE.QUERY_LEVEL:
@@ -392,18 +388,16 @@ class MonitorIndex extends React.Component {
               style: { paddingLeft: '10px' },
             }}
             inputProps={{
-              placeholder: supportMultipleIndices ? 'Select indices' : 'Select an index',
+              // Wazuh: every monitor type monitors several indices, Active Response and per
+              // document monitors included.
+              placeholder: 'Select indices',
               async: true,
               isLoading,
               options: visibleOptions,
               comboBoxRef: this.setComboBoxRef,
               onBlur: (e, field, form) => {
                 // Wazuh: apply the typed index, the combo box does not always do it.
-                const applied = this.commitPendingSearchValue(
-                  field.value,
-                  form,
-                  supportMultipleIndices
-                );
+                const applied = this.commitPendingSearchValue(field.value, form);
                 // Wazuh: `setFieldTouched` validates the value the form had when this handler
                 // started, so validating here after applying a value would bring the error of the
                 // previous value back until the next interaction. The value applied above asks for
@@ -416,13 +410,14 @@ class MonitorIndex extends React.Component {
                 form.setFieldValue('index', options, true);
               },
               onCreateOption: (value, field, form) => {
-                this.onCreateOption(value, field.value, form.setFieldValue, supportMultipleIndices);
+                // Wazuh: `supportMultipleIndices` is no longer passed.
+                this.onCreateOption(value, field.value, form.setFieldValue);
               },
               onSearchChange: this.onSearchChange,
               renderOption: this.renderOption,
               delimiter: ',',
               isClearable: true,
-              singleSelection: supportMultipleIndices ? false : { asPlainText: true },
+              // Wazuh: `singleSelection` was removed, every monitor type selects several indices.
               'data-test-subj': 'indicesComboBox',
             }}
           />

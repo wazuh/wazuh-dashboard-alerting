@@ -39,6 +39,7 @@ import WorkflowDetails from '../WorkflowDetails/WorkflowDetails';
 import { getInitialValues, getPlugins, submit } from './utils/helpers';
 import {
   getFindingsPresetChannelId,
+  getFindingsPresetIndices,
   getFindingsPresetValues,
   restoreFindingsPreset,
 } from './utils/findingsPreset'; // Wazuh
@@ -142,21 +143,26 @@ export default class CreateMonitor extends Component {
    * until then, so the monitor name does not change under the user.
    */
   loadFindingsPreset = async () => {
-    const { notificationService } = this.props;
+    const { httpClient, notificationService } = this.props;
     const { channelId } = this.state.findingsPreset;
-    let channelName;
-    let channelMuted = false;
-    try {
-      const channel = await notificationService.getChannel(channelId);
-      channelName = channel?.name;
-      channelMuted = channel?.is_enabled === false;
-    } catch (error) {
-      // The channel might have been deleted, the callout asks the user to select another one.
-    }
+    const loadChannel = async () => {
+      try {
+        return await notificationService.getChannel(channelId);
+      } catch (error) {
+        // The channel might have been deleted, the callout asks the user to select another one.
+      }
+    };
+    const [channel, indices] = await Promise.all([
+      loadChannel(),
+      getFindingsPresetIndices(httpClient),
+    ]);
+    const channelName = channel?.name;
+    const channelMuted = channel?.is_enabled === false;
     // Kept to restore the preset when the user changes the monitor type, which removes it.
     const presetValues = getFindingsPresetValues({
       channelId: channelName ? channelId : '',
       channelName,
+      indices,
     });
     this.setState(({ initialValues }) => ({
       initialValues: { ...initialValues, ...presetValues },
@@ -606,6 +612,7 @@ export default class CreateMonitor extends Component {
                       <FindingsPresetCallOut
                         channelName={findingsPreset.channelName}
                         channelMuted={findingsPreset.channelMuted}
+                        indices={findingsPreset.presetValues.index.map(({ label }) => label)}
                       />
                     ) : (
                       <FindingsPresetDiscardedCallOut

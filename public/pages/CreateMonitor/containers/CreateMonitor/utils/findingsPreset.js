@@ -11,10 +11,14 @@
 
 import _ from 'lodash';
 import {
+  ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN,
   ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX,
   MONITOR_TYPE,
   SEARCH_TYPE,
 } from '../../../../../utils/constants';
+import { isActiveResponseFindingsIndex } from '../../../../../utils/validate';
+import { getDataSourceQueryObj } from '../../../../utils/helpers';
+import { getDataStreamName } from '../../MonitorIndex/utils/helpers';
 import {
   DEFAULT_DOCUMENT_LEVEL_QUERY,
   FORMIK_INITIAL_DOCUMENT_LEVEL_QUERY_VALUES,
@@ -28,10 +32,34 @@ export const FINDINGS_PRESET = 'findings';
 
 /*
  * Findings are split in one data stream per category, and document level monitors do not support
- * index patterns, so the preset watches a single category: the Security one.
+ * index patterns, so the preset lists the data stream of every category. The Security one is
+ * watched when they cannot be listed.
  */
-export const FINDINGS_PRESET_INDEX = `${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}-v5-security`;
-export const FINDINGS_PRESET_CATEGORY = 'Security';
+export const FINDINGS_PRESET_FALLBACK_INDEX = `${ACTIVE_RESPONSE_FINDINGS_INDEX_PREFIX}-v5-security`;
+
+/**
+ * Returns the findings indices the preset watches: the data stream of every findings category, or
+ * the fallback index when none is found.
+ *
+ * @param {object} httpClient
+ */
+export const getFindingsPresetIndices = async (httpClient) => {
+  let indices = [];
+  try {
+    const response = await httpClient.post('../api/alerting/_indices', {
+      body: JSON.stringify({ index: ACTIVE_RESPONSE_FINDINGS_INDEX_PATTERN }),
+      query: getDataSourceQueryObj()?.query,
+    });
+    if (response?.ok) {
+      indices = response.resp
+        .map(({ index }) => getDataStreamName(index) || index)
+        .filter(isActiveResponseFindingsIndex);
+    }
+  } catch (error) {
+    // The fallback index keeps the preset usable, the user can still change the index.
+  }
+  return indices.length ? _.sortBy(_.uniq(indices)) : [FINDINGS_PRESET_FALLBACK_INDEX];
+};
 
 // `wazuh.rule.level` is a keyword, so every severity is matched by its own query.
 const SEVERITY_FIELD = 'wazuh.rule.level';
@@ -58,8 +86,13 @@ export const getFindingsPresetMonitorName = (channelName) =>
  * @param {string} [channelId] channel of the notification action; left empty when the channel was
  * not found, so the user picks one
  * @param {string} [channelName] used to name the monitor and its action
+ * @param {string[]} [indices] findings indices to watch, see getFindingsPresetIndices
  */
-export const getFindingsPresetValues = ({ channelId = '', channelName } = {}) => {
+export const getFindingsPresetValues = ({
+  channelId = '',
+  channelName,
+  indices = [FINDINGS_PRESET_FALLBACK_INDEX],
+} = {}) => {
   const queries = FINDINGS_PRESET_SEVERITIES.map((severity) => ({
     ..._.cloneDeep(FORMIK_INITIAL_DOCUMENT_LEVEL_QUERY_VALUES),
     queryName: `${severity}_severity`,
@@ -83,7 +116,7 @@ export const getFindingsPresetValues = ({ channelId = '', channelName } = {}) =>
     name: getFindingsPresetMonitorName(channelName),
     monitor_type: MONITOR_TYPE.DOC_LEVEL,
     searchType: SEARCH_TYPE.GRAPH,
-    index: [{ label: FINDINGS_PRESET_INDEX }],
+    index: indices.map((index) => ({ label: index })),
     // The extraction query editor starts from it, as when Per document monitor is selected.
     query: DEFAULT_DOCUMENT_LEVEL_QUERY,
     queries,
