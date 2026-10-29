@@ -48,6 +48,7 @@ import { getAlertsFindingColumn } from '../FindingsDashboard/findingsUtils';
 import {
   appendCommentsAction,
   getDataSourceId,
+  getIsAlertFindingEnabled, // Wazuh
   getIsCommentsEnabled,
 } from '../../../utils/helpers';
 
@@ -77,6 +78,7 @@ export default class AcknowledgeAlertsModal extends Component {
       sortField: sortField,
       totalAlerts: 0,
       commentsEnabled: false,
+      alertFindingEnabled: false, // Wazuh
     };
   }
 
@@ -95,6 +97,10 @@ export default class AcknowledgeAlertsModal extends Component {
     );
     getIsCommentsEnabled(this.props.httpClient).then((commentsEnabled) => {
       this.setState({ commentsEnabled });
+    });
+    // Wazuh
+    getIsAlertFindingEnabled(this.props.httpClient).then((alertFindingEnabled) => {
+      this.setState({ alertFindingEnabled });
     });
   }
 
@@ -292,6 +298,7 @@ export default class AcknowledgeAlertsModal extends Component {
       sortField,
       totalAlerts,
       commentsEnabled,
+      alertFindingEnabled,
     } = this.state;
 
     const getColumns = () => {
@@ -303,19 +310,22 @@ export default class AcknowledgeAlertsModal extends Component {
         case MONITOR_TYPE.DOC_LEVEL:
         case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           columns = _.cloneDeep(queryColumns);
-          columns.splice(
-            0,
-            0,
-            getAlertsFindingColumn(
-              httpClient,
-              history,
-              location,
-              notifications,
-              flyoutIsOpen,
-              () => this.setState({ flyoutIsOpen: true }),
-              () => this.setState({ flyoutIsOpen: false })
-            )
-          );
+          // Wazuh: the Document column opens the finding of the alert, which only exists when the
+          // alerting findings are stored.
+          if (alertFindingEnabled)
+            columns.splice(
+              0,
+              0,
+              getAlertsFindingColumn(
+                httpClient,
+                history,
+                location,
+                notifications,
+                flyoutIsOpen,
+                () => this.setState({ flyoutIsOpen: true }),
+                () => this.setState({ flyoutIsOpen: false })
+              )
+            );
           break;
         default:
           columns = queryColumns;

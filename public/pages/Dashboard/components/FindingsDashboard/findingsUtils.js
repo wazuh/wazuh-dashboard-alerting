@@ -7,6 +7,7 @@ import React from 'react';
 import _ from 'lodash';
 import { renderTime } from '../../utils/tableUtils';
 import FindingFlyout from './FindingFlyout';
+import AlertFindingLink from './AlertFindingLink'; // Wazuh
 import FindingsPopover from './FindingsPopover';
 import queryString from 'query-string';
 import { backendErrorNotification } from '../../../../utils/helpers';
@@ -53,17 +54,20 @@ export const getAlertsFindingColumn = (
     render: (related_doc_ids, alert) => {
       if (_.isEmpty(related_doc_ids))
         console.log('Alerts index contains an entry with 0 related document IDs:', alert);
+      // Wazuh: the alerts raised before the alerting findings were stored have no finding to open.
       return (
-        <FindingFlyout
-          alert={alert}
-          httpClient={httpClient}
-          history={history}
-          location={location}
-          notifications={notifications}
-          dashboardFlyoutIsOpen={flyoutIsOpen}
-          openFlyout={openFlyout}
-          closeFlyout={closeFlyout}
-        />
+        <AlertFindingLink alert={alert} httpClient={httpClient}>
+          <FindingFlyout
+            alert={alert}
+            httpClient={httpClient}
+            history={history}
+            location={location}
+            notifications={notifications}
+            dashboardFlyoutIsOpen={flyoutIsOpen}
+            openFlyout={openFlyout}
+            closeFlyout={closeFlyout}
+          />
+        </AlertFindingLink>
       );
     },
   };

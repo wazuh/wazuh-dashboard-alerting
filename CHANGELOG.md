@@ -27,6 +27,7 @@
 | [#21](https://github.com/wazuh/wazuh-dashboard-alerting/issues/21) | Fixed request execution in Extraction Query Editor |
 | [#71](https://github.com/wazuh/wazuh-dashboard-alerting/issues/71) | Fixed duplicated button in Monitors list |
 | [#136](https://github.com/wazuh/wazuh-dashboard-alerting/issues/136) | Fixed misleading index pattern hint in the Create Monitor index field for document level monitors |
+| [#189](https://github.com/wazuh/wazuh-dashboard-alerting/issues/189) | Fixed the empty History chart and the trigger bar errors in the monitor details, and hid the Document column of the alerts when alerting findings are not stored |
 
 ## Prior versions
 
