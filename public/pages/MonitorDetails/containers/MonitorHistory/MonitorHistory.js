@@ -223,7 +223,9 @@ class MonitorHistory extends PureComponent {
           () => this.getAlerts()
         );
       } else {
-        const parsedError = JSON.parse(resp.resp.response);
+        // Wazuh: the error response does not always include the raw `response`, and parsing an
+        // undefined value would throw before the error is stored.
+        const parsedError = resp.resp?.response ? JSON.parse(resp.resp.response) : resp.resp;
         this.setState({ queryResponse: parsedError });
       }
     } catch (err) {

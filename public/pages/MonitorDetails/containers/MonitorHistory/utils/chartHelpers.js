@@ -149,8 +149,10 @@ export const getPOISearchQuery = (monitorId, startTime, endTime, intervalDuratio
           lang: 'painless',
           // Alert start / end time can fall in only in one bucket, but our POI shows the alerts over the time of period.
           // To achieve this below script will return events over the period so it will fall into all buckets from starting to end time for an alert
+          // Wazuh: date fields are `ZonedDateTime` in OpenSearch 3, which has no `millis` getter, so the epoch
+          // milliseconds are read through `toInstant().toEpochMilli()`.
           source: `def alertsWindow = new ArrayList();
-                      def startTime = doc.start_time.value.millis < params.startTime ? params.startTime : doc.start_time.value.millis;
+                      def startTime = doc.start_time.value.toInstant().toEpochMilli() < params.startTime ? params.startTime : doc.start_time.value.toInstant().toEpochMilli();
                       def endTime;
                       /*
                         Painless script returns default dateTime epoch for null date fields instead of returning null.
@@ -162,7 +164,7 @@ export const getPOISearchQuery = (monitorId, startTime, endTime, intervalDuratio
                       if(doc.end_time.size() == 0) {
                         endTime = params.endTime
                       } else {
-                        endTime = doc.end_time.value.millis;
+                        endTime = doc.end_time.value.toInstant().toEpochMilli();
                       }
                       while(startTime <= endTime) {
                            alertsWindow.add(startTime);
