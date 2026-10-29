@@ -209,7 +209,7 @@ export const supportsIndexPatterns = (monitorType) =>
 export const getIndexPatternError = (monitorType) =>
   `Index patterns are not supported for ${
     MONITOR_TYPE_LABEL[monitorType] || 'these monitors'
-  }. Select a single index instead of a wildcard (*) or date math pattern.`;
+  }. Select concrete indices instead of a wildcard (*) or date math pattern.`;
 
 export const validateIndex = (options, monitorType) => {
   if (!Array.isArray(options)) return 'Must specify an index.';
@@ -263,12 +263,16 @@ export const validateActiveResponseIndex = (indexExists) => async (options) => {
   }
 
   if (indices.some((index) => index.includes('*'))) {
-    return 'Index patterns are not supported. Select a single findings index.';
+    return 'Index patterns are not supported. Select concrete findings indices.';
   }
 
   const existence = await Promise.all(indices.map(indexExists));
-  if (existence.some((exists) => !exists)) {
-    return 'Index not found. Select one of the available findings indices.';
+  // Wazuh: several indices can be selected, so the message names the ones that were not found.
+  const missingIndices = indices.filter((index, i) => !existence[i]);
+  if (missingIndices.length) {
+    return `Index not found: ${missingIndices.join(
+      ', '
+    )}. Select from the available findings indices.`;
   }
 };
 

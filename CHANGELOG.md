@@ -18,6 +18,7 @@
 | [#83](https://github.com/wazuh/wazuh-dashboard-alerting/issues/83) | Hide the monitors owned by the Ruleset management plugin (`security_analytics`) in the monitors table |
 | [#87](https://github.com/wazuh/wazuh-dashboard-alerting/issues/87) | Hide `Destinations` tab |
 | [#86](https://github.com/wazuh/wazuh-dashboard-alerting/issues/86) | Hide `Document findings` tab in Active Response and Per document monitor details |
+| [#186](https://github.com/wazuh/wazuh-dashboard-alerting/issues/186) | Allow selecting multiple indices in Active Response and Per document monitors, and watch every findings category in the findings preset |
 
 ### Fixed
 

@@ -4,7 +4,11 @@
  */
 
 import _ from 'lodash';
-import { getFindingsForMonitor, parseFindingsForPreview } from './findingsUtils';
+import {
+  getFindingsForMonitor,
+  getPreviewFindingIndex, // Wazuh
+  parseFindingsForPreview,
+} from './findingsUtils';
 import { SUPPORTED_DOC_LEVEL_QUERY_OPERATORS } from '../../../CreateMonitor/components/DocumentLevelMonitorQueries/utils/constants';
 
 describe('findingsUtils', () => {
@@ -231,5 +235,43 @@ describe('findingsUtils', () => {
         expect(output.length).toEqual(expectedOutput.length);
       });
     });
+  });
+  // Wazuh
+  describe('getPreviewFindingIndex', () => {
+    test('returns the index named by the document ID', () => {
+      expect(getPreviewFindingIndex('docId|.ds-wazuh-findings-v5-security-000001', 'index')).toBe(
+        '.ds-wazuh-findings-v5-security-000001'
+      );
+    });
+
+    test('splits at the last separator, as document IDs can contain one', () => {
+      expect(getPreviewFindingIndex('doc|Id|indexName', 'index')).toBe('indexName');
+    });
+
+    test('falls back to the given index when the document ID does not name one', () => {
+      expect(getPreviewFindingIndex('docId', 'index')).toBe('index');
+    });
+  });
+
+  // Wazuh: monitors over several indices find documents in each of them
+  test('parseFindingsForPreview sets the index of each finding', () => {
+    const queries = [
+      {
+        id: 'query1',
+        queryName: 'query1',
+        field: 'field.name',
+        operator: SUPPORTED_DOC_LEVEL_QUERY_OPERATORS[0],
+        query: 'value1',
+        tags: [],
+      },
+    ];
+    const previewResponse = { query1: ['docId1|indexA', 'docId2|indexB'] };
+
+    const output = parseFindingsForPreview(previewResponse, 'indexA', queries);
+
+    expect(output.map(({ index, related_doc_id }) => [index, related_doc_id])).toEqual([
+      ['indexA', 'docId1|indexA'],
+      ['indexB', 'docId2|indexB'],
+    ]);
   });
 });

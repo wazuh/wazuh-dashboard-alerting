@@ -6,8 +6,9 @@
 import _ from 'lodash';
 import {
   FINDINGS_PRESET,
-  FINDINGS_PRESET_INDEX,
+  FINDINGS_PRESET_FALLBACK_INDEX,
   getFindingsPresetChannelId,
+  getFindingsPresetIndices,
   getFindingsPresetMonitorName,
   getFindingsPresetValues,
   restoreFindingsPreset,
@@ -51,28 +52,74 @@ describe('getFindingsPresetMonitorName', () => {
   });
 });
 
+describe('getFindingsPresetIndices', () => {
+  const httpClient = { post: jest.fn() };
+
+  test('lists the data stream of every findings category', async () => {
+    httpClient.post.mockResolvedValue({
+      ok: true,
+      resp: [
+        { index: '.ds-wazuh-findings-v5-system-activity-000001' },
+        { index: '.ds-wazuh-findings-v5-security-000001' },
+        { index: '.ds-wazuh-findings-v5-security-000002' },
+        { index: '.ds-wazuh-alerts-v5-000001' },
+        // A plain index is not a findings category.
+        { index: 'wazuh-findings-custom' },
+      ],
+    });
+
+    expect(await getFindingsPresetIndices(httpClient)).toEqual([
+      'wazuh-findings-v5-security',
+      'wazuh-findings-v5-system-activity',
+    ]);
+    expect(httpClient.post).toHaveBeenCalledWith('../api/alerting/_indices', {
+      body: JSON.stringify({ index: 'wazuh-findings*' }),
+      query: undefined,
+    });
+  });
+
+  test.each([
+    ['no findings index exists', () => httpClient.post.mockResolvedValue({ ok: true, resp: [] })],
+    ['the indices cannot be listed', () => httpClient.post.mockResolvedValue({ ok: false })],
+    ['the request fails', () => httpClient.post.mockRejectedValue(new Error('Forbidden'))],
+  ])('falls back to the security findings when %s', async (_description, mockResponse) => {
+    mockResponse();
+
+    expect(await getFindingsPresetIndices(httpClient)).toEqual([FINDINGS_PRESET_FALLBACK_INDEX]);
+    expect(FINDINGS_PRESET_FALLBACK_INDEX).toBe('wazuh-findings-v5-security');
+  });
+});
+
 describe('getFindingsPresetValues', () => {
-  test('sets up a document level monitor over the security findings', () => {
-    const values = getFindingsPresetValues({ channelId: 'abc', channelName: 'SOC Slack' });
+  const indices = ['wazuh-findings-v5-security', 'wazuh-findings-v5-system-activity'];
+
+  test('sets up a document level monitor over the findings indices', () => {
+    const values = getFindingsPresetValues({ channelId: 'abc', channelName: 'SOC Slack', indices });
 
     expect(values).toMatchObject({
       name: 'SOC Slack: high and critical findings',
       monitor_type: MONITOR_TYPE.DOC_LEVEL,
       searchType: SEARCH_TYPE.GRAPH,
-      index: [{ label: 'wazuh-findings-v5-security' }],
+      index: [
+        { label: 'wazuh-findings-v5-security' },
+        { label: 'wazuh-findings-v5-system-activity' },
+      ],
     });
-    expect(FINDINGS_PRESET_INDEX).toBe('wazuh-findings-v5-security');
+  });
+
+  test('watches the security findings when no indices are given', () => {
+    expect(getFindingsPresetValues().index).toEqual([{ label: 'wazuh-findings-v5-security' }]);
   });
 
   test('builds the monitor the indexer receives', () => {
     const monitor = toMonitor(
-      getFindingsPresetValues({ channelId: 'abc', channelName: 'SOC Slack' })
+      getFindingsPresetValues({ channelId: 'abc', channelName: 'SOC Slack', indices })
     );
 
     expect(monitor.monitor_type).toBe(MONITOR_TYPE.DOC_LEVEL);
     expect(monitor.schedule).toEqual({ period: { interval: 1, unit: 'MINUTES' } });
     expect(monitor.inputs[0].doc_level_input).toMatchObject({
-      indices: ['wazuh-findings-v5-security'],
+      indices,
       queries: [
         { name: 'high_severity', query: 'wazuh.rule.level:"high"', tags: [] },
         { name: 'critical_severity', query: 'wazuh.rule.level:"critical"', tags: [] },

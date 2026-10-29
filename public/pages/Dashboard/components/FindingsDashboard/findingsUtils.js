@@ -126,6 +126,19 @@ export const getFindingsForMonitor = (findings = [], monitorId = '') => {
   return { findings: monitorFindings, totalFindings: monitorFindings.length };
 };
 
+/**
+ * Wazuh: the ExecuteMonitor API identifies a matched document as `<doc id>|<index>`, which tells
+ * the index of each finding when the monitor runs over several indices. Index names cannot contain
+ * a `|`, so the index is whatever follows the last one.
+ *
+ * @param {string} docId document ID returned by the ExecuteMonitor API
+ * @param {string} fallbackIndex index used when the document ID does not name one
+ */
+export const getPreviewFindingIndex = (docId, fallbackIndex) => {
+  const separatorPosition = docId.lastIndexOf('|');
+  return separatorPosition === -1 ? fallbackIndex : docId.slice(separatorPosition + 1);
+};
+
 export const parseFindingsForPreview = (previewResponse = {}, index = '', queries = []) => {
   // TODO FIXME: ExecuteMonitor API currently only returns a list of query names/IDs and the relevant docIds.
   //  As a result, the preview dashboard cannot display document contents.
@@ -151,7 +164,7 @@ export const parseFindingsForPreview = (previewResponse = {}, index = '', querie
     });
     _.keys(docIdsToQueries).forEach((docId) => {
       const finding = {
-        index: index,
+        index: getPreviewFindingIndex(docId, index), // Wazuh
         related_doc_id: docId,
         queries: docIdsToQueries[docId],
         timestamp: timestamp,
