@@ -63,6 +63,8 @@ describe('getFindingsPresetIndices', () => {
         { index: '.ds-wazuh-findings-v5-security-000001' },
         { index: '.ds-wazuh-findings-v5-security-000002' },
         { index: '.ds-wazuh-alerts-v5-000001' },
+        // A plain index is not a findings category.
+        { index: 'wazuh-findings-custom' },
       ],
     });
 

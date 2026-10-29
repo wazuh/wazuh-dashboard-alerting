@@ -39,7 +39,8 @@ export const FINDINGS_PRESET_FALLBACK_INDEX = `${ACTIVE_RESPONSE_FINDINGS_INDEX_
 
 /**
  * Returns the findings indices the preset watches: the data stream of every findings category, or
- * the fallback index when none is found.
+ * the fallback index when none is found. Plain findings indices are left out, as they are not a
+ * findings category.
  *
  * @param {object} httpClient
  */
@@ -52,8 +53,8 @@ export const getFindingsPresetIndices = async (httpClient) => {
     });
     if (response?.ok) {
       indices = response.resp
-        .map(({ index }) => getDataStreamName(index) || index)
-        .filter(isActiveResponseFindingsIndex);
+        .map(({ index }) => getDataStreamName(index))
+        .filter((dataStream) => dataStream && isActiveResponseFindingsIndex(dataStream));
     }
   } catch (error) {
     // The fallback index keeps the preset usable, the user can still change the index.

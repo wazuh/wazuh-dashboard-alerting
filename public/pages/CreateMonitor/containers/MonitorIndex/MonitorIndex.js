@@ -108,19 +108,20 @@ class MonitorIndex extends React.Component {
   }
 
   // Wazuh: every monitor type supports several indices, so the typed index is always added to the
-  // selection and `supportMultipleIndices` is no longer received.
+  // selection and `supportMultipleIndices` is no longer received. Returns whether it was added.
   onCreateOption(searchValue, selectedOptions, setFieldValue) {
     const newOption = { label: searchValue.trim() };
 
-    if (!newOption.label) return;
+    if (!newOption.label) return false;
 
     // Wazuh: an index typed again is already selected, adding it twice would repeat it in the
     // monitor.
-    if (selectedOptions.some(({ label }) => label === newOption.label)) return;
+    if (selectedOptions.some(({ label }) => label === newOption.label)) return false;
 
     // Wazuh: the monitor form does not validate on change, so validation is requested explicitly.
     // Otherwise the error of the previous value stays on screen until the next interaction.
     setFieldValue('index', selectedOptions.concat(newOption), true);
+    return true;
   }
 
   /**
@@ -129,19 +130,20 @@ class MonitorIndex extends React.Component {
    * The combo box only turns typed text into a selection on blur while none of its options is
    * active, so the typed index could be silently discarded.
    *
-   * @returns {boolean} whether the typed text was applied.
+   * @returns {boolean} whether the typed index was added, which validates the field. An index that
+   * is already selected is not added.
    */
   commitPendingSearchValue(selectedOptions, form) {
     if (!this.searchValue.trim()) return false;
 
-    this.onCreateOption(this.searchValue, selectedOptions, form.setFieldValue);
+    const added = this.onCreateOption(this.searchValue, selectedOptions, form.setFieldValue);
 
     // Reset the search input, otherwise the combo box keeps rendering the typed text as invalid
     // instead of the index that was just applied.
     if (this.comboBox?.clearSearchValue) this.comboBox.clearSearchValue();
     else this.searchValue = '';
 
-    return true;
+    return added;
   }
 
   /**

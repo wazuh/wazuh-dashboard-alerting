@@ -22,10 +22,10 @@ const runAllPromises = () => new Promise(setImmediate);
 
 let formikProps;
 
-function getMountWrapper(customProps = {}) {
+function getMountWrapper(customProps = {}, initialValues = FORMIK_INITIAL_VALUES) {
   return mount(
     // `validateOnChange` is disabled to match the monitor form, see CreateMonitor.
-    <Formik initialValues={FORMIK_INITIAL_VALUES} validateOnChange={false}>
+    <Formik initialValues={initialValues} validateOnChange={false}>
       {(props) => {
         formikProps = props;
         return <MonitorIndex httpClient={httpClientMock} {...customProps} />;
@@ -272,6 +272,22 @@ describe('MonitorIndex', () => {
     expect(formikProps.values.index).toEqual([{ label: 'logstash-0' }]);
   });
 
+  test('validates the field when the typed index is already selected', async () => {
+    // A monitor being edited loads its index without validating it.
+    const wrapper = getMountWrapper(
+      { monitorType: MONITOR_TYPE.DOC_LEVEL },
+      { ...FORMIK_INITIAL_VALUES, index: [{ label: 'logstash-*' }] }
+    );
+
+    typeInComboBox(wrapper, 'logstash-*');
+    await runAllPromises();
+    blurComboBox(wrapper);
+    await runAllPromises();
+
+    expect(formikProps.values.index).toEqual([{ label: 'logstash-*' }]);
+    expect(formikProps.errors.index).toMatch('Index patterns are not supported');
+  });
+
   // Wazuh
   describe('Active Response monitors', () => {
     // Only this index exists, so the queries of any other one come back empty.
@@ -292,13 +308,16 @@ describe('MonitorIndex', () => {
       });
     });
 
+    const getSelectedIndices = () => formikProps.values.index.map(({ label }) => label);
+
     const typeAndBlur = async (wrapper, value) => {
+      const selectedIndices = getSelectedIndices();
       typeInComboBox(wrapper, value);
       await runAllPromises();
       blurComboBox(wrapper);
       await runAllPromises();
-      // The typed index is always applied, so that it is never taken for a discarded one.
-      expect(formikProps.values.index.map(({ label }) => label)).toContain(value);
+      // The typed index is always added, so that it is never taken for a discarded one.
+      expect(getSelectedIndices()).toEqual([...selectedIndices, value]);
     };
 
     test.each([

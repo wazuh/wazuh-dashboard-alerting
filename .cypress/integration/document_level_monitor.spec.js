@@ -484,10 +484,17 @@ describe('DocumentLevelMonitor', () => {
           })
           .trigger('blur', { force: true });
 
-        // Wazuh: confirm Index field keeps the monitor index and adds the typed ones
-        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX, { timeout: 20000 });
-        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX_A);
-        cy.get('[data-test-subj="indicesComboBox"]').contains(TESTING_INDEX_B);
+        // Wazuh: confirm Index field keeps the monitor index and adds the typed ones. The pills are
+        // compared by their exact text, as the monitor index is part of the typed index names.
+        cy.get('[data-test-subj="indicesComboBox"] .euiComboBoxPill', { timeout: 20000 }).should(
+          ($pills) => {
+            expect([...$pills].map((pill) => pill.textContent.trim())).to.deep.equal([
+              TESTING_INDEX,
+              TESTING_INDEX_A,
+              TESTING_INDEX_B,
+            ]);
+          }
+        );
 
         // Click the save button
         cy.get('button').contains('Save').last().click({ force: true });
