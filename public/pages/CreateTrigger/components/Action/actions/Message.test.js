@@ -8,6 +8,7 @@ import { render, shallow, mount } from 'enzyme';
 import { Formik } from 'formik';
 import Message from './Message';
 import Mustache from 'mustache';
+import { MONITOR_TYPE } from '../../../../../utils/constants';
 
 jest.mock('@elastic/eui/lib/components/form/form_row/make_id', () => () => 'testing-id');
 
@@ -25,6 +26,7 @@ function getRenderWrapper(customProps = {}) {
           }}
           context={{}}
           index={0}
+          {...customProps}
           sendTestMessage={jest.fn()}
           setFlyout={jest.fn()}
         />
@@ -37,5 +39,13 @@ describe('Message', () => {
   test('renders', () => {
     const wrapper = getRenderWrapper();
     expect(wrapper).toMatchSnapshot();
+  });
+
+  test('offers the finding variables for per document monitors only', () => {
+    const variablesButton = '[data-test-subj="insertMessageVariableButton"]';
+    const docLevelContext = { ctx: { monitor: { monitor_type: MONITOR_TYPE.DOC_LEVEL } } };
+
+    expect(getRenderWrapper({ context: docLevelContext }).find(variablesButton)).toHaveLength(1);
+    expect(getRenderWrapper().find(variablesButton)).toHaveLength(0);
   });
 });

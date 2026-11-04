@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import _ from 'lodash';
 import Mustache from 'mustache';
 import {
@@ -35,6 +35,8 @@ import {
 import { URL, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../../../../../utils/constants';
 import { MONITOR_TYPE } from '../../../../../utils/constants';
 import OverviewStat from '../../../../MonitorDetails/components/OverviewStat';
+// Wazuh
+import { InsertVariable } from './insert-variable';
 
 export const NOTIFY_OPTIONS_VALUES = {
   PER_ALERT: 'per_alert',
@@ -138,6 +140,8 @@ export default function Message(
     .props
 ) {
   const [displayPreview, setDisplayPreview] = useState(false);
+  // Wazuh: the variables are inserted at the cursor of the message.
+  const messageTextAreaRef = useRef(null);
   const onDisplayPreviewChange = (e) => setDisplayPreview(e.target.checked);
   const monitorType = _.get(context, 'ctx.monitor.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const editableActionExecutionPolicy =
@@ -146,6 +150,7 @@ export default function Message(
     monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
 
   const actionPath = `${fieldPath}actions.${index}`;
+  const messagePath = `${actionPath}.message_template.source`;
   const actionExecutionPolicyPath = editableActionExecutionPolicy
     ? `${actionPath}.action_execution_policy`
     : actionPath;
@@ -234,7 +239,7 @@ export default function Message(
         />
       ) : null}
       <FormikTextArea
-        name={`${fieldPath}actions.${index}.message_template.source`}
+        name={messagePath}
         formRow
         fieldProps={{ validate: required }}
         rowProps={{
@@ -251,6 +256,11 @@ export default function Message(
               </EuiText>
             </div>
           ),
+          // Wazuh: per document monitors can insert the fields of a finding.
+          labelAppend:
+            monitorType === MONITOR_TYPE.DOC_LEVEL ? (
+              <InsertVariable name={messagePath} textAreaRef={messageTextAreaRef} />
+            ) : undefined,
           style: { maxWidth: '100%' },
           isInvalid,
           error: hasError,
@@ -259,6 +269,7 @@ export default function Message(
           placeholder: 'Can use mustache templates',
           fullWidth: true,
           isInvalid,
+          inputRef: messageTextAreaRef, // Wazuh
         }}
       />
 

@@ -19,6 +19,7 @@
 | [#87](https://github.com/wazuh/wazuh-dashboard-alerting/issues/87) | Hide `Destinations` tab |
 | [#86](https://github.com/wazuh/wazuh-dashboard-alerting/issues/86) | Hide `Document findings` tab in Active Response and Per document monitor details |
 | [#186](https://github.com/wazuh/wazuh-dashboard-alerting/issues/186) | Allow selecting multiple indices in Active Response and Per document monitors, and watch every findings category in the findings preset |
+| [#9451](https://github.com/wazuh/wazuh-dashboard-plugins/issues/9451) | Include the finding title, severity, endpoint, user, source and a link to the finding in the default message of Per document monitors over findings, and offer these fields as variables in the message editor |
 
 ### Fixed
 
