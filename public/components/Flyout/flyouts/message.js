@@ -6,7 +6,8 @@
 import React from 'react';
 import { EuiLink, EuiText, EuiTitle } from '@elastic/eui';
 import { URL } from '../../../../utils/constants';
-// Wazuh
+// Wazuh: list the finding variables and translate their section.
+import { i18n } from '@osd/i18n';
 import { FindingVariablesList } from '../../../pages/CreateTrigger/components/Action/actions/insert-variable';
 
 const message = () => ({
@@ -29,9 +30,17 @@ const message = () => ({
         {`You have access to a "ctx" variable in your painless scripts and action mustache templates.`}
       </p>
       {/* Wazuh: fields of a finding that the message of a per document monitor can print */}
-      <h3>Finding variables</h3>
+      <h3>
+        {i18n.translate('alerting.flyout.message.findingVariables.title', {
+          defaultMessage: 'Finding variables',
+        })}
+      </h3>
       <p>
-        {`Per document monitors over findings can print these fields of the first finding. Inside a "{{#sample_documents}}" block, use the "{{_source.<field>}}" form to print them for every finding.`}
+        {i18n.translate('alerting.flyout.message.findingVariables.description', {
+          defaultMessage:
+            'Per document monitors over findings can print these fields of the first finding. Inside a "{sectionTag}" block, use the "{fieldTag}" form to print them for every finding.',
+          values: { sectionTag: '{{#sample_documents}}', fieldTag: '{{_source.<field>}}' },
+        })}
       </p>
       <FindingVariablesList />
       <h3>Learn More</h3>
