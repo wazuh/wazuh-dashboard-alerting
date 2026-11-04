@@ -57,13 +57,6 @@ Object {
       You have access to a "ctx" variable in your painless scripts and action mustache templates.
     </p>
     <h3>
-      Finding variables
-    </h3>
-    <p>
-      Per document monitors over findings can print these fields of the first finding. Inside a "{{#sample_documents}}" block, use the "{{_source.&lt;field&gt;}}" form to print them for every finding.
-    </p>
-    <FindingVariablesList />
-    <h3>
       Learn More
     </h3>
     <ul>

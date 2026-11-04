@@ -20,7 +20,6 @@ import _ from 'lodash';
 import { i18n } from '@osd/i18n';
 import { useFormikContext } from 'formik';
 import {
-  EuiCode,
   EuiContextMenuItem,
   EuiContextMenuPanel,
   EuiPopover,
@@ -67,26 +66,12 @@ export const getMessageVariables = () => [
   { id: 'triggerName', label: translate('triggerName', 'Trigger name'), tag: 'ctx.trigger.name' },
 ];
 
-/**
- * Whether a position of the message is inside a sample documents block.
- *
- * @param {string} text message
- * @param {number} position
- */
 export const isInsideSampleDocuments = (text, position) => {
   const before = text.slice(0, position);
   const blockStart = before.lastIndexOf(SAMPLE_DOCUMENTS_BLOCK_START);
   return blockStart !== -1 && before.indexOf(SAMPLE_DOCUMENTS_BLOCK_END, blockStart) === -1;
 };
 
-/**
- * Mustache text of a variable.
- *
- * @param {object} variable see getMessageVariables
- * @param {object} options
- * @param {boolean} [options.insideSampleDocuments] the text goes inside a sample documents block
- * @param {string} options.discoverUrl see getDiscoverUrl
- */
 export const getVariableSnippet = (variable, { insideSampleDocuments = false, discoverUrl }) => {
   const documentPath = insideSampleDocuments ? '' : FIRST_SAMPLE_DOCUMENT_PATH;
   if (variable.link) {
@@ -99,12 +84,7 @@ export const getVariableSnippet = (variable, { insideSampleDocuments = false, di
   return `{{${variable.tag}}}`;
 };
 
-/**
- * Inserts a text in place of the selection, or on a new line at the end when there is no
- * selection.
- *
- * @returns {{value: string, cursor: number}} new text and the position after the inserted text
- */
+// Without a selection the snippet goes on a new line at the end.
 export const insertText = (text, snippet, selection) => {
   if (!selection) {
     const separator = text && !text.endsWith('\n') ? '\n' : '';
@@ -118,13 +98,6 @@ export const insertText = (text, snippet, selection) => {
   };
 };
 
-/**
- * Button that inserts a variable at the cursor of the message, or at its end when the message was
- * not being edited.
- *
- * @param {string} name formik path of the message
- * @param {object} textAreaRef ref of the message text area
- */
 export const InsertVariable = ({ name, textAreaRef }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selection = useRef(null);
@@ -199,21 +172,5 @@ export const InsertVariable = ({ name, textAreaRef }) => {
         ))}
       />
     </EuiPopover>
-  );
-};
-
-/**
- * List of the variables with the text that prints the first finding, for the help of the message.
- */
-export const FindingVariablesList = () => {
-  const discoverUrl = getDiscoverUrl();
-  return (
-    <ul>
-      {getMessageVariables().map((variable) => (
-        <li key={variable.id}>
-          {variable.label}: <EuiCode>{getVariableSnippet(variable, { discoverUrl })}</EuiCode>
-        </li>
-      ))}
-    </ul>
   );
 };
