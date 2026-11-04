@@ -99,7 +99,8 @@ export const getFindingLink = (discoverUrl, documentPath = '') => {
  */
 export const getFindingsMessageSource = (discoverUrl) =>
   `
-Monitor {{ctx.monitor.name}} raised {{ctx.trigger.name}}.
+Monitor: {{ctx.monitor.name}}
+Trigger: {{ctx.trigger.name}}
 {{#ctx.alerts}}
 ${SAMPLE_DOCUMENTS_BLOCK_START}
 

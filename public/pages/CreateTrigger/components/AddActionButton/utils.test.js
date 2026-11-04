@@ -34,6 +34,7 @@ describe('getInitialActionValues', () => {
     const tags = getSampleDocumentsTags(message);
     const sections = tags.filter((tag) => tag.startsWith('#_source.'));
 
+    expect(message).toMatch(/^Monitor: \{\{ctx.monitor.name}}\nTrigger: \{\{ctx.trigger.name}}\n/);
     expect(message).toContain('{{#ctx.alerts}}');
     expect(tags).toEqual(
       expect.arrayContaining([
