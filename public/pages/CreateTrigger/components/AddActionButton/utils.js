@@ -7,9 +7,12 @@ import _ from 'lodash';
 import { DEFAULT_MESSAGE_SOURCE, FORMIK_INITIAL_ACTION_VALUES } from '../../utils/constants';
 import { MONITOR_TYPE } from '../../../../utils/constants';
 import { getDigitId, getUniqueName } from '../../../../utils/helpers';
-// Wazuh
+// Wazuh: build the default message of per document monitors over findings.
 import { getDiscoverUrl, getFindingsMessageSource, isFindingsMonitor } from './findings-message';
 
+// Wazuh: `indices` selects the findings default message for per document monitors.
+// export const getInitialActionValues = ({ monitorType, flyoutMode, actions }) => {
+// Wazuh: document the parameters, including the indices added to detect monitors over findings.
 /**
  * @param {object} params
  * @param {string} params.monitorType

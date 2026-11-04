@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Wazuh: `useRef` keeps the message textarea to insert variables at its cursor.
+// import React, { useState } from 'react';
 import React, { useRef, useState } from 'react';
 import _ from 'lodash';
 import Mustache from 'mustache';
@@ -35,7 +37,7 @@ import {
 import { URL, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../../../../../utils/constants';
 import { MONITOR_TYPE } from '../../../../../utils/constants';
 import OverviewStat from '../../../../MonitorDetails/components/OverviewStat';
-// Wazuh
+// Wazuh: insert finding variables and note the dashboard address used by finding links.
 import { i18n } from '@osd/i18n';
 import { InsertVariable } from './insert-variable';
 import { getDashboardUrl, hasFindingLink } from '../../AddActionButton/findings-message';
@@ -152,6 +154,7 @@ export default function Message(
     monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
 
   const actionPath = `${fieldPath}actions.${index}`;
+  // Wazuh: the Insert variable menu writes the message through its form path.
   const messagePath = `${actionPath}.message_template.source`;
   const actionExecutionPolicyPath = editableActionExecutionPolicy
     ? `${actionPath}.action_execution_policy`
@@ -241,7 +244,7 @@ export default function Message(
         />
       ) : null}
       <FormikTextArea
-        name={messagePath}
+        name={`${fieldPath}actions.${index}.message_template.source`}
         formRow
         fieldProps={{ validate: required }}
         rowProps={{
@@ -279,7 +282,7 @@ export default function Message(
           placeholder: 'Can use mustache templates',
           fullWidth: true,
           isInvalid,
-          inputRef: messageTextAreaRef, // Wazuh
+          inputRef: messageTextAreaRef, // Wazuh: the Insert variable menu reads the cursor position.
         }}
       />
 
