@@ -136,6 +136,12 @@ describe('getFindingsPresetValues', () => {
     expect(trigger.actions[0]).toMatchObject({ name: 'Notify SOC Slack', destination_id: 'abc' });
   });
 
+  test('notifies with the details of each finding', () => {
+    const action = getFindingsPresetValues({ indices }).triggerDefinitions[0].actions[0];
+
+    expect(action.message_template.source).toContain('{{#sample_documents}}');
+  });
+
   test('leaves the channel for the user to select when it was not found', () => {
     const values = getFindingsPresetValues();
     const action = values.triggerDefinitions[0].actions[0];

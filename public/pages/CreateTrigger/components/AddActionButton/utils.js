@@ -7,8 +7,17 @@ import _ from 'lodash';
 import { DEFAULT_MESSAGE_SOURCE, FORMIK_INITIAL_ACTION_VALUES } from '../../utils/constants';
 import { MONITOR_TYPE } from '../../../../utils/constants';
 import { getDigitId, getUniqueName } from '../../../../utils/helpers';
+// Wazuh
+import { getDiscoverUrl, getFindingsMessageSource, isFindingsMonitor } from './findings-message';
 
-export const getInitialActionValues = ({ monitorType, flyoutMode, actions }) => {
+/**
+ * @param {object} params
+ * @param {string} params.monitorType
+ * @param {boolean} [params.flyoutMode]
+ * @param {object[]} [params.actions] actions of the trigger, used to name the new one
+ * @param {Array<string|{label: string}>} [params.indices] Wazuh: indices of the monitor
+ */
+export const getInitialActionValues = ({ monitorType, flyoutMode, actions, indices }) => {
   const initialActionValues = _.cloneDeep(FORMIK_INITIAL_ACTION_VALUES);
 
   switch (monitorType) {
@@ -26,6 +35,16 @@ export const getInitialActionValues = ({ monitorType, flyoutMode, actions }) => 
         'message_template.source',
         DEFAULT_MESSAGE_SOURCE.QUERY_LEVEL_MONITOR
       );
+      break;
+    // Wazuh: notifications about findings say which finding they are about and link to it.
+    case MONITOR_TYPE.DOC_LEVEL:
+      if (isFindingsMonitor(indices)) {
+        _.set(
+          initialActionValues,
+          'message_template.source',
+          getFindingsMessageSource(getDiscoverUrl())
+        );
+      }
       break;
   }
 

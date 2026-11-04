@@ -33,6 +33,8 @@ const AddActionButton = ({
   const notificationIcon = 'bell';
   const activeResponseIcon = 'console';
   const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
+  // The default message of a monitor over findings describes each finding.
+  const indices = _.get(arrayHelpers, 'form.values.index', []);
   const onClickNotification = () => {
     const actions = _.get(values, `${fieldPath}actions`, []);
     const initialValues = getInitialActionValues({
@@ -40,6 +42,7 @@ const AddActionButton = ({
       flyoutMode,
       actions,
       actionType: MANAGED_CHANNEL_CATEGORY.NOTIFICATION,
+      indices,
     });
     arrayHelpers.push(initialValues);
 
