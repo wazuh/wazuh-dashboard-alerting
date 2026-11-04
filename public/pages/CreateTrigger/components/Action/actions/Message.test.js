@@ -48,4 +48,18 @@ describe('Message', () => {
     expect(getRenderWrapper({ context: docLevelContext }).find(variablesButton)).toHaveLength(1);
     expect(getRenderWrapper().find(variablesButton)).toHaveLength(0);
   });
+
+  test('tells which dashboard address the finding links use', () => {
+    const linkNote = 'Links to findings use http://localhost.';
+    const findingLinkAction = {
+      message_template: {
+        source:
+          'View: http://localhost/app/discover#/doc/wazuh-findings-v5%2A/{{_index}}?id={{_id}}',
+        lang: 'mustache',
+      },
+    };
+
+    expect(getRenderWrapper({ action: findingLinkAction }).text()).toContain(linkNote);
+    expect(getRenderWrapper().text()).not.toContain(linkNote);
+  });
 });

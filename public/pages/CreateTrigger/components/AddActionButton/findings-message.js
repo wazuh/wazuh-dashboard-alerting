@@ -57,6 +57,19 @@ export const getDiscoverUrl = () => {
   }
 };
 
+/**
+ * Address of the dashboard written into the finding links: the Discover URL without its app path.
+ */
+export const getDashboardUrl = () => getDiscoverUrl().replace(/\/app\/discover\/?$/, '');
+
+/**
+ * Whether a message has a link to a finding in Discover.
+ *
+ * @param {string} [source] message template
+ */
+export const hasFindingLink = (source) =>
+  _.isString(source) && source.includes('/app/discover#/doc/');
+
 /*
  * Discover route of a single document: `#/doc/<index pattern id>/<index>?id=<document id>`. The `*`
  * of the index pattern id is percent-encoded so chat apps that read it as markup keep the link

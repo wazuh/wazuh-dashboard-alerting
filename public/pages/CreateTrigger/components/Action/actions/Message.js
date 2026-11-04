@@ -36,7 +36,9 @@ import { URL, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../../../../
 import { MONITOR_TYPE } from '../../../../../utils/constants';
 import OverviewStat from '../../../../MonitorDetails/components/OverviewStat';
 // Wazuh
+import { i18n } from '@osd/i18n';
 import { InsertVariable } from './insert-variable';
+import { getDashboardUrl, hasFindingLink } from '../../AddActionButton/findings-message';
 
 export const NOTIFY_OPTIONS_VALUES = {
   PER_ALERT: 'per_alert',
@@ -261,6 +263,14 @@ export default function Message(
             monitorType === MONITOR_TYPE.DOC_LEVEL ? (
               <InsertVariable name={messagePath} textAreaRef={messageTextAreaRef} />
             ) : undefined,
+          // Wazuh: the finding links keep the dashboard address used when the action was created.
+          helpText: hasFindingLink(_.get(action, 'message_template.source'))
+            ? i18n.translate('alerting.triggers.action.message.findingLinkAddress', {
+                defaultMessage:
+                  'Links to findings use {dashboardUrl}. Edit them if recipients reach the dashboard at another address.',
+                values: { dashboardUrl: getDashboardUrl() },
+              })
+            : undefined,
           style: { maxWidth: '100%' },
           isInvalid,
           error: hasError,
