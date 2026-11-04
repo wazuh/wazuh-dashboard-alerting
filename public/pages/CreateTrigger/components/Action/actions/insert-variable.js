@@ -100,13 +100,18 @@ export const getVariableSnippet = (variable, { insideSampleDocuments = false, di
 };
 
 /**
- * Inserts a text in place of the selection, or at the end when there is no selection.
+ * Inserts a text in place of the selection, or on a new line at the end when there is no
+ * selection.
  *
  * @returns {{value: string, cursor: number}} new text and the position after the inserted text
  */
 export const insertText = (text, snippet, selection) => {
-  const start = selection ? selection.start : text.length;
-  const end = selection ? selection.end : text.length;
+  if (!selection) {
+    const separator = text && !text.endsWith('\n') ? '\n' : '';
+    const value = `${text}${separator}${snippet}`;
+    return { value, cursor: value.length };
+  }
+  const { start, end } = selection;
   return {
     value: `${text.slice(0, start)}${snippet}${text.slice(end)}`,
     cursor: start + snippet.length,

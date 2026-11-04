@@ -49,6 +49,13 @@ describe('Message', () => {
     expect(getRenderWrapper().find(variablesButton)).toHaveLength(0);
   });
 
+  test('sizes the message box to the message for per document monitors only', () => {
+    const docLevelContext = { ctx: { monitor: { monitor_type: MONITOR_TYPE.DOC_LEVEL } } };
+
+    expect(getRenderWrapper({ context: docLevelContext }).find('textarea').attr('rows')).toBe('5');
+    expect(getRenderWrapper().find('textarea').attr('rows')).toBe('3');
+  });
+
   test('tells which dashboard address the finding links use', () => {
     const linkNote = 'Links to findings use http://localhost.';
     const findingLinkAction = {

@@ -283,6 +283,11 @@ export default function Message(
           fullWidth: true,
           isInvalid,
           inputRef: messageTextAreaRef, // Wazuh: the Insert variable menu reads the cursor position.
+          // Wazuh: the findings default message has many lines, so the box grows with the message.
+          rows:
+            monitorType === MONITOR_TYPE.DOC_LEVEL
+              ? _.clamp((_.get(action, 'message_template.source') || '').split('\n').length, 3, 20)
+              : undefined,
         }}
       />
 
