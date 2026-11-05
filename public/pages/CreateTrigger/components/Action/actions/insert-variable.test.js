@@ -68,4 +68,19 @@ describe('InsertVariable', () => {
 
     expect(values.message).toBe('Hello\n{{ctx.monitor.name}}');
   });
+
+  test('explains how to print another field of the finding', () => {
+    const wrapper = mount(
+      <Formik initialValues={{ message: '' }} onSubmit={jest.fn()}>
+        {() => <InsertVariable name="message" textAreaRef={{ current: null }} />}
+      </Formik>
+    );
+
+    wrapper.find('button[data-test-subj="insertMessageVariableButton"]').simulate('click');
+    wrapper.update();
+
+    expect(wrapper.find('EuiPopoverFooter').text()).toBe(
+      'For another field of the finding, write {{_source.<field>}} inside {{#sample_documents}}.'
+    );
+  });
 });

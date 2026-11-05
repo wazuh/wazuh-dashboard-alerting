@@ -18,12 +18,16 @@
 import React, { useRef, useState } from 'react';
 import _ from 'lodash';
 import { i18n } from '@osd/i18n';
+import { FormattedMessage } from '@osd/i18n/react';
 import { useFormikContext } from 'formik';
 import {
+  EuiCode,
   EuiContextMenuItem,
   EuiContextMenuPanel,
   EuiPopover,
+  EuiPopoverFooter,
   EuiSmallButtonEmpty,
+  EuiText,
 } from '@elastic/eui';
 import {
   FINDING_FIELDS,
@@ -171,6 +175,18 @@ export const InsertVariable = ({ name, textAreaRef }) => {
           </EuiContextMenuItem>
         ))}
       />
+      <EuiPopoverFooter paddingSize="s">
+        <EuiText size="xs" color="subdued" style={{ maxWidth: 260 }}>
+          <FormattedMessage
+            id="alerting.triggers.action.message.otherFindingFields"
+            defaultMessage="For another field of the finding, write {fieldTag} inside {blockTag}."
+            values={{
+              fieldTag: <EuiCode>{'{{_source.<field>}}'}</EuiCode>,
+              blockTag: <EuiCode>{SAMPLE_DOCUMENTS_BLOCK_START}</EuiCode>,
+            }}
+          />
+        </EuiText>
+      </EuiPopoverFooter>
     </EuiPopover>
   );
 };
