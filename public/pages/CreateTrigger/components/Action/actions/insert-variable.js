@@ -18,10 +18,8 @@
 import React, { useRef, useState } from 'react';
 import _ from 'lodash';
 import { i18n } from '@osd/i18n';
-import { FormattedMessage } from '@osd/i18n/react';
 import { useFormikContext } from 'formik';
 import {
-  EuiCode,
   EuiContextMenuItem,
   EuiContextMenuPanel,
   EuiPopover,
@@ -177,14 +175,14 @@ export const InsertVariable = ({ name, textAreaRef }) => {
       />
       <EuiPopoverFooter paddingSize="s">
         <EuiText size="xs" color="subdued" style={{ maxWidth: 260 }}>
-          <FormattedMessage
-            id="alerting.triggers.action.message.otherFindingFields"
-            defaultMessage="For another field of the finding, write {fieldTag} inside {blockTag}."
-            values={{
-              fieldTag: <EuiCode>{'{{_source.<field>}}'}</EuiCode>,
-              blockTag: <EuiCode>{SAMPLE_DOCUMENTS_BLOCK_START}</EuiCode>,
-            }}
-          />
+          {/* The alerting app has no intl provider, so the text is not a FormattedMessage. */}
+          {i18n.translate('alerting.triggers.action.message.otherFindingFields', {
+            defaultMessage: 'For another field of the finding, write {fieldTag} inside {blockTag}.',
+            values: {
+              fieldTag: '{{_source.<field>}}',
+              blockTag: SAMPLE_DOCUMENTS_BLOCK_START,
+            },
+          })}
         </EuiText>
       </EuiPopoverFooter>
     </EuiPopover>

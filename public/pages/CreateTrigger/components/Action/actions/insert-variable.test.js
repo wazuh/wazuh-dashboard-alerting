@@ -82,5 +82,7 @@ describe('InsertVariable', () => {
     expect(wrapper.find('EuiPopoverFooter').text()).toBe(
       'For another field of the finding, write {{_source.<field>}} inside {{#sample_documents}}.'
     );
+    // The app renders the menu without an intl provider (console.error is spied in the setup).
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('React Intl'));
   });
 });
