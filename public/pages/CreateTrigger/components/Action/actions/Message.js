@@ -177,8 +177,11 @@ export default function Message(
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_ALERT;
       break;
     case MONITOR_TYPE.DOC_LEVEL:
-    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_EXECUTION;
+      break;
+    // Wazuh: the indexer only accepts actions per alert on active response monitors.
+    case MONITOR_TYPE.ACTIVE_RESPONSE:
+      defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_ALERT;
       break;
     default:
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_EXECUTION;
@@ -345,6 +348,8 @@ export default function Message(
                   value: NOTIFY_OPTIONS_VALUES.PER_EXECUTION,
                   checked: actionExecutionScopeId === NOTIFY_OPTIONS_VALUES.PER_EXECUTION,
                   label: NOTIFY_OPTIONS_LABELS.PER_EXECUTION,
+                  // Wazuh: the indexer rejects actions per execution on active response monitors.
+                  disabled: monitorType === MONITOR_TYPE.ACTIVE_RESPONSE,
                   onChange: (e, field, form) => field.onChange(e),
                 }}
               />

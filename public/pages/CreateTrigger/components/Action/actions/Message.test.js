@@ -68,6 +68,15 @@ describe('Message', () => {
     expect(getRenderWrapper().find(variablesButton)).toHaveLength(0);
   });
 
+  test('performs the actions of active response monitors per alert only', () => {
+    const wrapper = getRenderWrapper({
+      context: { ctx: { monitor: { monitor_type: MONITOR_TYPE.ACTIVE_RESPONSE } } },
+    });
+
+    expect(wrapper.find('input[value="per_alert"]').attr('checked')).toBe('checked');
+    expect(wrapper.find('input[value="per_execution"]').attr('disabled')).toBe('disabled');
+  });
+
   test('sizes the message box to the message for per document monitors only', () => {
     const docLevelContext = { ctx: { monitor: { monitor_type: MONITOR_TYPE.DOC_LEVEL } } };
 
