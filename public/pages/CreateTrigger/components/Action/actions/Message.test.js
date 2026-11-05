@@ -41,11 +41,25 @@ describe('Message', () => {
     expect(wrapper).toMatchSnapshot();
   });
 
-  test('offers the finding variables for per document monitors only', () => {
+  test('offers the finding variables for per document monitors over findings only', () => {
     const variablesButton = '[data-test-subj="insertMessageVariableButton"]';
-    const docLevelContext = { ctx: { monitor: { monitor_type: MONITOR_TYPE.DOC_LEVEL } } };
+    const docLevelContext = (indices) => ({
+      ctx: {
+        monitor: {
+          monitor_type: MONITOR_TYPE.DOC_LEVEL,
+          inputs: [{ doc_level_input: { indices } }],
+        },
+      },
+    });
 
-    expect(getRenderWrapper({ context: docLevelContext }).find(variablesButton)).toHaveLength(1);
+    expect(
+      getRenderWrapper({ context: docLevelContext(['wazuh-findings-v5-security']) }).find(
+        variablesButton
+      )
+    ).toHaveLength(1);
+    expect(
+      getRenderWrapper({ context: docLevelContext(['logs-*']) }).find(variablesButton)
+    ).toHaveLength(0);
     expect(getRenderWrapper().find(variablesButton)).toHaveLength(0);
   });
 

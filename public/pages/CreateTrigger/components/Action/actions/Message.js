@@ -40,7 +40,11 @@ import OverviewStat from '../../../../MonitorDetails/components/OverviewStat';
 // Wazuh: insert finding variables and note the dashboard address used by finding links.
 import { i18n } from '@osd/i18n';
 import { InsertVariable } from './insert-variable';
-import { getDashboardUrl, hasFindingLink } from '../../AddActionButton/findings-message';
+import {
+  getDashboardUrl,
+  hasFindingLink,
+  isFindingsMonitor,
+} from '../../AddActionButton/findings-message';
 
 export const NOTIFY_OPTIONS_VALUES = {
   PER_ALERT: 'per_alert',
@@ -261,9 +265,10 @@ export default function Message(
               </EuiText>
             </div>
           ),
-          // Wazuh: per document monitors can insert the fields of a finding.
+          // Wazuh: per document monitors over findings can insert the fields of a finding.
           labelAppend:
-            monitorType === MONITOR_TYPE.DOC_LEVEL ? (
+            monitorType === MONITOR_TYPE.DOC_LEVEL &&
+            isFindingsMonitor(_.get(context, 'ctx.monitor.inputs[0].doc_level_input.indices')) ? (
               <InsertVariable name={messagePath} textAreaRef={messageTextAreaRef} />
             ) : undefined,
           // Wazuh: the finding links keep the dashboard address used when the action was created.
