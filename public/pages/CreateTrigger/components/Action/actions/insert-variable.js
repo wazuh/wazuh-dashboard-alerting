@@ -12,21 +12,25 @@
  * fetches it. Elsewhere it is inserted with the full path of the first finding,
  * `{{ctx.alerts.0.sample_documents.0._source.<field>}}`, which also makes the indexer fetch the
  * documents. When the message has a sample documents block too, the indexer only fetches the
- * fields printed inside it, which the default message does for every field listed here.
+ * fields printed inside it, which the default message does for every field listed here. That is
+ * why the other fields of the monitor indices are only offered inside a sample documents block.
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import _ from 'lodash';
 import { i18n } from '@osd/i18n';
 import { useFormikContext } from 'formik';
 import {
-  EuiContextMenuItem,
-  EuiContextMenuPanel,
   EuiPopover,
   EuiPopoverFooter,
+  EuiPopoverTitle,
+  EuiSelectable,
   EuiSmallButtonEmpty,
   EuiText,
 } from '@elastic/eui';
+import { getClient } from '../../../../../services';
+import { getDataSourceQueryObj } from '../../../../utils/helpers';
+import { getPathsPerDataTypeWithDynamicTemplates } from '../../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
 import {
   FINDING_FIELDS,
   FIRST_SAMPLE_DOCUMENT_PATH,
@@ -36,8 +40,8 @@ import {
   getFindingLink,
 } from '../../AddActionButton/findings-message';
 
-const translate = (id, defaultMessage) =>
-  i18n.translate(`alerting.triggers.action.message.variables.${id}`, { defaultMessage });
+const translate = (id, defaultMessage, values) =>
+  i18n.translate(`alerting.triggers.action.message.variables.${id}`, { defaultMessage, values });
 
 /*
  * A variable prints a finding field (`field`), the link to the finding (`link`) or a value of the
@@ -86,7 +90,10 @@ export const getVariableSnippet = (variable, { insideSampleDocuments = false, di
   return `{{${variable.tag}}}`;
 };
 
-// Without a selection the snippet goes on a new line at the end.
+/*
+ * Without a selection the snippet goes on a new line at the end. A cursor at the end of a line also
+ * starts a new line, so the snippet is not glued to the tag before it.
+ */
 export const insertText = (text, snippet, selection) => {
   if (!selection) {
     const separator = text && !text.endsWith('\n') ? '\n' : '';
@@ -94,16 +101,136 @@ export const insertText = (text, snippet, selection) => {
     return { value, cursor: value.length };
   }
   const { start, end } = selection;
+  const atLineEnd =
+    start === end &&
+    start > 0 &&
+    text[start - 1] !== '\n' &&
+    (start === text.length || text[start] === '\n');
+  const inserted = atLineEnd ? `\n${snippet}` : snippet;
   return {
-    value: `${text.slice(0, start)}${snippet}${text.slice(end)}`,
-    cursor: start + snippet.length,
+    value: `${text.slice(0, start)}${inserted}${text.slice(end)}`,
+    cursor: start + inserted.length,
   };
 };
 
-export const InsertVariable = ({ name, textAreaRef }) => {
+/*
+ * Fields of the source documents of the monitor indices, from their mappings. Dropped: the
+ * `.keyword` subfields and the object fields (the documents only have their leaf fields), the
+ * dynamic template patterns, and the finding fields the menu already offers.
+ */
+export const getIndexFields = (mappings) => {
+  const fields = new Set(
+    Object.entries(getPathsPerDataTypeWithDynamicTemplates(mappings)).flatMap(([type, paths]) =>
+      // A location is printed as a map, so its coordinates are offered instead.
+      type === 'geo_point'
+        ? [...paths].flatMap((path) => [`${path}.lat`, `${path}.lon`])
+        : [...paths]
+    )
+  );
+  const findingFields = new Set(Object.values(FINDING_FIELDS));
+  const sourceFields = [...fields]
+    .filter(
+      (field) => !(field.endsWith('.keyword') && fields.has(field.slice(0, -'.keyword'.length)))
+    )
+    .sort();
+  return sourceFields.filter(
+    (field, index) =>
+      !field.includes('*') &&
+      !findingFields.has(field) &&
+      // Sorted, so the children of an object field come right after it.
+      !(sourceFields[index + 1] || '').startsWith(`${field}.`)
+  );
+};
+
+/*
+ * The mappings are requested the first time the menu opens for some indices. A failed request is
+ * sent again the next time the menu opens.
+ */
+const useIndexFields = (indices, isOpen) => {
+  const [state, setState] = useState({ fields: [], isLoading: false, hasError: false });
+  const requestedIndices = useRef(null);
+  const indicesKey = (indices || []).join(',');
+
+  useEffect(() => {
+    if (!isOpen || !indicesKey || requestedIndices.current === indicesKey) return;
+    requestedIndices.current = indicesKey;
+    setState({ fields: [], isLoading: true, hasError: false });
+    const onError = () => {
+      requestedIndices.current = null;
+      setState({ fields: [], isLoading: false, hasError: true });
+    };
+    getClient()
+      .post('/api/alerting/_mappings', {
+        body: JSON.stringify({ index: indicesKey.split(',') }),
+        query: getDataSourceQueryObj()?.query,
+      })
+      .then((response) =>
+        response.ok
+          ? setState({ fields: getIndexFields(response.resp), isLoading: false, hasError: false })
+          : onError()
+      )
+      .catch(onError);
+  }, [isOpen, indicesKey]);
+
+  return state;
+};
+
+export const InsertVariable = ({ name, textAreaRef, indices }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selection = useRef(null);
+  const insertedCursor = useRef(null);
   const { values, setFieldValue } = useFormikContext();
+  const text = _.get(values, name) || '';
+  const insideSampleDocuments = isInsideSampleDocuments(
+    text,
+    selection.current ? selection.current.start : text.length
+  );
+  // The index fields can only be inserted inside a sample documents block, so they load there.
+  const { fields, isLoading, hasError } = useIndexFields(indices, isOpen && insideSampleDocuments);
+
+  const commonVariables = getMessageVariables();
+  const fieldVariables = fields.map((field) => ({ id: `field:${field}`, label: field, field }));
+  const variablesById = _.keyBy([...commonVariables, ...fieldVariables], 'id');
+  const toOption = (variable) => ({
+    key: variable.id,
+    label: variable.label,
+    'data-test-subj': `insertMessageVariable-${variable.id}`,
+  });
+  // The notes are short enough to fit the list row, which cuts longer text.
+  const getIndexFieldOptions = () => {
+    if (!insideSampleDocuments) {
+      return [
+        {
+          key: 'indexFieldsOutsideBlock',
+          label: translate('indexFieldsOutsideBlock', 'Only inside {blockTag}', {
+            blockTag: SAMPLE_DOCUMENTS_BLOCK_START,
+          }),
+          disabled: true,
+        },
+      ];
+    }
+    if (hasError) {
+      return [
+        {
+          key: 'indexFieldsError',
+          label: translate('indexFieldsError', 'Could not load them, reopen to retry'),
+          disabled: true,
+        },
+      ];
+    }
+    return fieldVariables.map(toOption);
+  };
+  const indexFieldOptions = getIndexFieldOptions();
+  const options = [
+    { label: translate('commonGroup', 'Common'), isGroupLabel: true },
+    ...commonVariables.map(toOption),
+    ...(indexFieldOptions.length && !_.isEmpty(indices)
+      ? [
+          { label: translate('indexFieldsGroup', 'Index fields'), isGroupLabel: true },
+          ...indexFieldOptions,
+        ]
+      : []),
+  ];
 
   // The text area loses the focus when the button is pressed, so its selection is read before.
   const rememberSelection = (focusedElement) => {
@@ -116,24 +243,25 @@ export const InsertVariable = ({ name, textAreaRef }) => {
 
   const onSelect = (variable) => {
     setIsOpen(false);
-    const text = _.get(values, name) || '';
-    const insideSampleDocuments = isInsideSampleDocuments(
-      text,
-      selection.current ? selection.current.start : text.length
-    );
     const snippet = getVariableSnippet(variable, {
       insideSampleDocuments,
       discoverUrl: getDiscoverUrl(),
     });
     const { value, cursor } = insertText(text, snippet, selection.current);
     setFieldValue(name, value);
+    insertedCursor.current = cursor;
+  };
 
+  // The popover gives the focus back to its button when it closes, so the text area takes it after.
+  const focusTextArea = () => {
     const textArea = textAreaRef?.current;
-    if (textArea) {
+    const cursor = insertedCursor.current;
+    insertedCursor.current = null;
+    if (!textArea || cursor === null) return;
+    setTimeout(() => {
       textArea.focus();
-      // After the new value is rendered.
-      setTimeout(() => textArea.setSelectionRange(cursor, cursor));
-    }
+      textArea.setSelectionRange(cursor, cursor);
+    });
   };
 
   const button = (
@@ -158,23 +286,35 @@ export const InsertVariable = ({ name, textAreaRef }) => {
       button={button}
       isOpen={isOpen}
       closePopover={() => setIsOpen(false)}
+      onTrapDeactivation={focusTextArea}
       panelPaddingSize="none"
       anchorPosition="downRight"
     >
-      <EuiContextMenuPanel
-        size="s"
-        items={getMessageVariables().map((variable) => (
-          <EuiContextMenuItem
-            key={variable.id}
-            data-test-subj={`insertMessageVariable-${variable.id}`}
-            onClick={() => onSelect(variable)}
-          >
-            {variable.label}
-          </EuiContextMenuItem>
-        ))}
-      />
+      <EuiSelectable
+        searchable
+        singleSelection
+        height={300}
+        isLoading={isLoading}
+        options={options}
+        searchProps={{
+          compressed: true,
+          placeholder: translate('searchPlaceholder', 'Search variables and fields'),
+          'data-test-subj': 'insertMessageVariableSearch',
+        }}
+        onChange={(newOptions) => {
+          const picked = newOptions.find((option) => option.checked === 'on');
+          if (picked && variablesById[picked.key]) onSelect(variablesById[picked.key]);
+        }}
+      >
+        {(list, search) => (
+          <div style={{ width: 320 }}>
+            <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
+            {list}
+          </div>
+        )}
+      </EuiSelectable>
       <EuiPopoverFooter paddingSize="s">
-        <EuiText size="xs" color="subdued" style={{ maxWidth: 260 }}>
+        <EuiText size="xs" color="subdued" style={{ maxWidth: 300 }}>
           {/* The alerting app has no intl provider, so the text is not a FormattedMessage. */}
           {i18n.translate('alerting.triggers.action.message.otherFindingFields', {
             defaultMessage: 'For another field of the finding, write {fieldTag} inside {blockTag}.',

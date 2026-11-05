@@ -159,9 +159,8 @@ export default function Message(
   // Wazuh: per document and active response monitors notify about documents.
   const isDocumentMonitor =
     monitorType === MONITOR_TYPE.DOC_LEVEL || monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
-  const isFindingsDocumentMonitor =
-    isDocumentMonitor &&
-    isFindingsMonitor(_.get(context, 'ctx.monitor.inputs[0].doc_level_input.indices'));
+  const monitorIndices = _.get(context, 'ctx.monitor.inputs[0].doc_level_input.indices');
+  const isFindingsDocumentMonitor = isDocumentMonitor && isFindingsMonitor(monitorIndices);
 
   const actionPath = `${fieldPath}actions.${index}`;
   // Wazuh: the Insert variable menu writes the message through its form path.
@@ -276,7 +275,11 @@ export default function Message(
           ),
           // Wazuh: per document monitors over findings can insert the fields of a finding.
           labelAppend: isFindingsDocumentMonitor ? (
-            <InsertVariable name={messagePath} textAreaRef={messageTextAreaRef} />
+            <InsertVariable
+              name={messagePath}
+              textAreaRef={messageTextAreaRef}
+              indices={monitorIndices}
+            />
           ) : undefined,
           // Wazuh: the finding links keep the dashboard address used when the action was created.
           helpText: hasFindingLink(_.get(action, 'message_template.source'))

@@ -9,10 +9,14 @@ import { act } from 'react-dom/test-utils';
 import { Formik } from 'formik';
 import {
   InsertVariable,
+  getIndexFields,
   getMessageVariables,
   getVariableSnippet,
   insertText,
 } from './insert-variable';
+import { setClient } from '../../../../../services';
+
+const mockPost = jest.fn();
 
 const getVariable = (id) => getMessageVariables().find((variable) => variable.id === id);
 
@@ -41,6 +45,12 @@ describe('insertText', () => {
     ['on a new line at the end', 'Hello', null, 'Hello\n{{x}}'],
     ['at the end after a line break', 'Hello\n', null, 'Hello\n{{x}}'],
     ['at the cursor', 'Hello world', { start: 6, end: 6 }, 'Hello {{x}}world'],
+    [
+      'on a new line at the end of a line',
+      'Hello\nworld',
+      { start: 5, end: 5 },
+      'Hello\n{{x}}\nworld',
+    ],
   ])('inserts the text %s', (_description, text, selection, expected) => {
     const { value, cursor } = insertText(text, '{{x}}', selection);
     expect(value).toBe(expected);
@@ -48,36 +58,157 @@ describe('insertText', () => {
   });
 });
 
+describe('getIndexFields', () => {
+  test('lists the leaf fields of the source documents the menu does not offer yet', () => {
+    const mappings = {
+      'wazuh-findings-v5-security': {
+        mappings: {
+          properties: {
+            wazuh: { properties: { rule: { properties: { title: { type: 'keyword' } } } } },
+            message: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+            host: { properties: { geo: { type: 'object' } } },
+            source: { properties: { geo: { properties: { location: { type: 'geo_point' } } } } },
+          },
+        },
+      },
+      'wazuh-findings-v5-system-activity': {
+        mappings: {
+          properties: {
+            host: { properties: { geo: { properties: { city: { type: 'keyword' } } } } },
+          },
+        },
+      },
+    };
+
+    expect(getIndexFields(mappings)).toEqual([
+      'host.geo.city',
+      'message',
+      'source.geo.location.lat',
+      'source.geo.location.lon',
+    ]);
+  });
+});
+
 describe('InsertVariable', () => {
-  test('inserts the selected variable in the message', async () => {
-    let values;
+  const mountInsertVariable = (initialValues, indices) => {
+    const formik = {};
     const wrapper = mount(
-      <Formik initialValues={{ message: 'Hello' }} onSubmit={jest.fn()}>
-        {(formik) => {
-          values = formik.values;
-          return <InsertVariable name="message" textAreaRef={{ current: null }} />;
+      <Formik initialValues={initialValues} onSubmit={jest.fn()}>
+        {(props) => {
+          formik.values = props.values;
+          return (
+            <InsertVariable name="message" textAreaRef={{ current: null }} indices={indices} />
+          );
         }}
       </Formik>
     );
+    return { wrapper, formik };
+  };
 
-    wrapper.find('button[data-test-subj="insertMessageVariableButton"]').simulate('click');
-    wrapper.update();
+  const open = async (wrapper) => {
     await act(async () => {
-      wrapper.find('button[data-test-subj="insertMessageVariable-monitorName"]').simulate('click');
+      wrapper.find('button[data-test-subj="insertMessageVariableButton"]').simulate('click');
     });
+    wrapper.update();
+  };
 
-    expect(values.message).toBe('Hello\n{{ctx.monitor.name}}');
+  const pick = async (wrapper, id) => {
+    // The list is virtualized and renders no rows without a layout, so the choice is sent directly.
+    const selectable = wrapper.find('EuiSelectable');
+    const options = selectable
+      .prop('options')
+      .map((option) => (option.key === id ? { ...option, checked: 'on' } : option));
+    await act(async () => {
+      selectable.prop('onChange')(options);
+    });
+  };
+
+  beforeEach(() => {
+    mockPost.mockReset();
+    setClient({ post: mockPost });
   });
 
-  test('explains how to print another field of the finding', () => {
-    const wrapper = mount(
-      <Formik initialValues={{ message: '' }} onSubmit={jest.fn()}>
-        {() => <InsertVariable name="message" textAreaRef={{ current: null }} />}
-      </Formik>
-    );
+  test('inserts the selected variable in the message', async () => {
+    const { wrapper, formik } = mountInsertVariable({ message: 'Hello' });
 
-    wrapper.find('button[data-test-subj="insertMessageVariableButton"]').simulate('click');
+    await open(wrapper);
+    await pick(wrapper, 'monitorName');
+
+    expect(formik.values.message).toBe('Hello\n{{ctx.monitor.name}}');
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test('inserts any field of the monitor indices', async () => {
+    mockPost.mockResolvedValue({
+      ok: true,
+      resp: {
+        'wazuh-findings-v5-security': {
+          mappings: { properties: { process: { properties: { name: { type: 'keyword' } } } } },
+        },
+      },
+    });
+    const { wrapper, formik } = mountInsertVariable({ message: '{{#sample_documents}}' }, [
+      'wazuh-findings-v5-security',
+    ]);
+
+    await open(wrapper);
     wrapper.update();
+    await pick(wrapper, 'field:process.name');
+
+    expect(mockPost).toHaveBeenCalledWith('/api/alerting/_mappings', {
+      body: JSON.stringify({ index: ['wazuh-findings-v5-security'] }),
+      query: undefined,
+    });
+    expect(formik.values.message).toBe('{{#sample_documents}}\n{{_source.process.name}}');
+  });
+
+  test('tells when the index fields could not be loaded and retries when reopened', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Internal Server Error')).mockResolvedValueOnce({
+      ok: true,
+      resp: {
+        'wazuh-findings-v5-security': {
+          mappings: { properties: { process: { properties: { name: { type: 'keyword' } } } } },
+        },
+      },
+    });
+    const { wrapper } = mountInsertVariable({ message: '{{#sample_documents}}' }, [
+      'wazuh-findings-v5-security',
+    ]);
+    const getKeys = () =>
+      wrapper
+        .find('EuiSelectable')
+        .prop('options')
+        .map((option) => option.key);
+
+    await open(wrapper);
+    wrapper.update();
+    expect(getKeys()).toContain('indexFieldsError');
+
+    await open(wrapper); // Closes the menu.
+    await open(wrapper);
+    wrapper.update();
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(getKeys()).toContain('field:process.name');
+  });
+
+  test('offers and loads the index fields inside a sample documents block only', async () => {
+    const { wrapper } = mountInsertVariable({ message: 'Hello' }, ['wazuh-findings-v5-security']);
+
+    await open(wrapper);
+    wrapper.update();
+    const keys = wrapper
+      .find('EuiSelectable')
+      .prop('options')
+      .map((option) => option.key);
+
+    expect(keys).toContain('indexFieldsOutsideBlock');
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test('explains how to print another field of the finding', async () => {
+    const { wrapper } = mountInsertVariable({ message: '' });
+
+    await open(wrapper);
 
     expect(wrapper.find('EuiPopoverFooter').text()).toBe(
       'For another field of the finding, write {{_source.<field>}} inside {{#sample_documents}}.'
