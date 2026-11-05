@@ -156,6 +156,12 @@ export default function Message(
     monitorType === MONITOR_TYPE.BUCKET_LEVEL ||
     monitorType === MONITOR_TYPE.DOC_LEVEL ||
     monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
+  // Wazuh: per document and active response monitors notify about documents.
+  const isDocumentMonitor =
+    monitorType === MONITOR_TYPE.DOC_LEVEL || monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
+  const isFindingsDocumentMonitor =
+    isDocumentMonitor &&
+    isFindingsMonitor(_.get(context, 'ctx.monitor.inputs[0].doc_level_input.indices'));
 
   const actionPath = `${fieldPath}actions.${index}`;
   // Wazuh: the Insert variable menu writes the message through its form path.
@@ -266,11 +272,9 @@ export default function Message(
             </div>
           ),
           // Wazuh: per document monitors over findings can insert the fields of a finding.
-          labelAppend:
-            monitorType === MONITOR_TYPE.DOC_LEVEL &&
-            isFindingsMonitor(_.get(context, 'ctx.monitor.inputs[0].doc_level_input.indices')) ? (
-              <InsertVariable name={messagePath} textAreaRef={messageTextAreaRef} />
-            ) : undefined,
+          labelAppend: isFindingsDocumentMonitor ? (
+            <InsertVariable name={messagePath} textAreaRef={messageTextAreaRef} />
+          ) : undefined,
           // Wazuh: the finding links keep the dashboard address used when the action was created.
           helpText: hasFindingLink(_.get(action, 'message_template.source'))
             ? i18n.translate('alerting.triggers.action.message.findingLinkAddress', {
@@ -289,10 +293,9 @@ export default function Message(
           isInvalid,
           inputRef: messageTextAreaRef, // Wazuh: the Insert variable menu reads the cursor position.
           // Wazuh: the findings default message has many lines, so the box grows with the message.
-          rows:
-            monitorType === MONITOR_TYPE.DOC_LEVEL
-              ? _.clamp((_.get(action, 'message_template.source') || '').split('\n').length, 3, 20)
-              : undefined,
+          rows: isDocumentMonitor
+            ? _.clamp((_.get(action, 'message_template.source') || '').split('\n').length, 3, 20)
+            : undefined,
         }}
       />
 

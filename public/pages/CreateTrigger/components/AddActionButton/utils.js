@@ -41,6 +41,7 @@ export const getInitialActionValues = ({ monitorType, flyoutMode, actions, indic
       break;
     // Wazuh: notifications about findings say which finding they are about and link to it.
     case MONITOR_TYPE.DOC_LEVEL:
+    case MONITOR_TYPE.ACTIVE_RESPONSE:
       if (isFindingsMonitor(indices)) {
         _.set(
           initialActionValues,

@@ -43,10 +43,10 @@ describe('Message', () => {
 
   test('offers the finding variables for per document monitors over findings only', () => {
     const variablesButton = '[data-test-subj="insertMessageVariableButton"]';
-    const docLevelContext = (indices) => ({
+    const docLevelContext = (indices, monitorType = MONITOR_TYPE.DOC_LEVEL) => ({
       ctx: {
         monitor: {
-          monitor_type: MONITOR_TYPE.DOC_LEVEL,
+          monitor_type: monitorType,
           inputs: [{ doc_level_input: { indices } }],
         },
       },
@@ -56,6 +56,11 @@ describe('Message', () => {
       getRenderWrapper({ context: docLevelContext(['wazuh-findings-v5-security']) }).find(
         variablesButton
       )
+    ).toHaveLength(1);
+    expect(
+      getRenderWrapper({
+        context: docLevelContext(['wazuh-findings-v5-security'], MONITOR_TYPE.ACTIVE_RESPONSE),
+      }).find(variablesButton)
     ).toHaveLength(1);
     expect(
       getRenderWrapper({ context: docLevelContext(['logs-*']) }).find(variablesButton)

@@ -51,6 +51,12 @@ describe('getInitialActionValues', () => {
     );
   });
 
+  test('uses the findings message for active response monitors', () => {
+    expect(getMessage(MONITOR_TYPE.ACTIVE_RESPONSE, FINDINGS_INDICES)).toBe(
+      getMessage(MONITOR_TYPE.DOC_LEVEL, FINDINGS_INDICES)
+    );
+  });
+
   test.each([
     ['a per document monitor over other indices', MONITOR_TYPE.DOC_LEVEL, [{ label: 'logs' }]],
     [
