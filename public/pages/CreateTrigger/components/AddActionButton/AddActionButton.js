@@ -24,7 +24,11 @@ const AddActionButton = ({
   const monitorType = _.get(arrayHelpers, 'form.values.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const onClick = () => {
     const actions = _.get(values, `${fieldPath}actions`, []);
-    const initialValues = getInitialActionValues({ monitorType, flyoutMode, actions });
+    // Wazuh: the default message of a monitor over findings describes each finding, so the
+    // indices of the monitor are passed too.
+    // const initialValues = getInitialActionValues({ monitorType, flyoutMode, actions });
+    const indices = _.get(arrayHelpers, 'form.values.index', []);
+    const initialValues = getInitialActionValues({ monitorType, flyoutMode, actions, indices });
     arrayHelpers.push(initialValues);
 
     if (onPostAdd) {
