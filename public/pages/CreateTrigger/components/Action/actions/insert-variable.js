@@ -4,16 +4,13 @@
  */
 
 /*
- * Wazuh: lets the user insert the fields of a finding in the message without knowing their
- * Mustache paths.
+ * Wazuh: lets the user insert the fields of a finding and the values of the execution in the
+ * message without knowing their Mustache paths.
  *
- * A finding field is inserted as `{{_source.<field>}}` when the cursor is inside a
- * `{{#sample_documents}}...{{/sample_documents}}` block, so it prints every finding and the indexer
- * fetches it. Elsewhere it is inserted with the full path of the first finding,
- * `{{ctx.alerts.0.sample_documents.0._source.<field>}}`, which also makes the indexer fetch the
- * documents. When the message has a sample documents block too, the indexer only fetches the
- * fields printed inside it, which the default message does for every field listed here. That is
- * why the other fields of the monitor indices are only offered inside a sample documents block.
+ * The indexer only fetches the fields of a finding printed with a plain `{{_source.<field>}}` tag
+ * inside a `{{#sample_documents}}...{{/sample_documents}}` block. Inside such a block a field is
+ * inserted as `{{_source.<field>}}`. Elsewhere it is inserted inside its own block, so it is
+ * fetched whatever the rest of the message prints, and it prints the value of every finding.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -33,7 +30,6 @@ import { getDataSourceQueryObj } from '../../../../utils/helpers';
 import { getPathsPerDataTypeWithDynamicTemplates } from '../../../../CreateMonitor/containers/DefineMonitor/utils/mappings';
 import {
   FINDING_FIELDS,
-  FIRST_SAMPLE_DOCUMENT_PATH,
   SAMPLE_DOCUMENTS_BLOCK_END,
   SAMPLE_DOCUMENTS_BLOCK_START,
   getDiscoverUrl,
@@ -43,9 +39,14 @@ import {
 const translate = (id, defaultMessage, values) =>
   i18n.translate(`alerting.triggers.action.message.variables.${id}`, { defaultMessage, values });
 
+// Loop over the findings of every alert, for the finding fields printed outside such a loop.
+export const FINDINGS_LOOP_START = `{{#ctx.alerts}}${SAMPLE_DOCUMENTS_BLOCK_START}`;
+export const FINDINGS_LOOP_END = `${SAMPLE_DOCUMENTS_BLOCK_END}{{/ctx.alerts}}`;
+
 /*
- * A variable prints a finding field (`field`), the link to the finding (`link`) or a value of the
- * execution (`tag`). The title is printed unescaped (`raw`), as it is free text.
+ * A variable prints a finding field (`field`), the link to the finding (`link`), a loop over the
+ * findings (`loop`) or a value of the execution (`tag`). The title is printed unescaped (`raw`), as
+ * it is free text.
  */
 export const getMessageVariables = () => [
   {
@@ -68,8 +69,20 @@ export const getMessageVariables = () => [
   { id: 'user', label: translate('user', 'User'), field: FINDING_FIELDS.USER },
   { id: 'sourceIp', label: translate('sourceIp', 'Source IP'), field: FINDING_FIELDS.SOURCE_IP },
   { id: 'findingLink', label: translate('findingLink', 'Link to finding'), link: true },
+  { id: 'findingsLoop', label: translate('findingsLoop', 'Each finding'), loop: true },
   { id: 'monitorName', label: translate('monitorName', 'Monitor name'), tag: 'ctx.monitor.name' },
   { id: 'triggerName', label: translate('triggerName', 'Trigger name'), tag: 'ctx.trigger.name' },
+  {
+    id: 'triggerSeverity',
+    label: translate('triggerSeverity', 'Trigger severity'),
+    tag: 'ctx.trigger.severity',
+  },
+  // Per document monitors run over the new documents, so the period ends when the monitor runs.
+  {
+    id: 'executionTime',
+    label: translate('executionTime', 'Execution time'),
+    tag: 'ctx.periodEnd',
+  },
 ];
 
 export const isInsideSampleDocuments = (text, position) => {
@@ -78,38 +91,52 @@ export const isInsideSampleDocuments = (text, position) => {
   return blockStart !== -1 && before.indexOf(SAMPLE_DOCUMENTS_BLOCK_END, blockStart) === -1;
 };
 
+/*
+ * Text the variable inserts and where the cursor goes, counted back from its end. Outside a loop,
+ * a finding field or link goes in its own loop, followed by a space that separates the findings.
+ */
 export const getVariableSnippet = (variable, { insideSampleDocuments = false, discoverUrl }) => {
-  const documentPath = insideSampleDocuments ? '' : FIRST_SAMPLE_DOCUMENT_PATH;
-  if (variable.link) {
-    return getFindingLink(discoverUrl, documentPath);
+  if (variable.loop) {
+    return {
+      snippet: `${FINDINGS_LOOP_START}\n\n${FINDINGS_LOOP_END}`,
+      cursorBack: 1 + FINDINGS_LOOP_END.length,
+    };
   }
-  if (variable.field) {
-    const tag = `${documentPath ? `${documentPath}.` : ''}_source.${variable.field}`;
-    return variable.raw ? `{{{${tag}}}}` : `{{${tag}}}`;
+  if (!variable.link && !variable.field) {
+    return { snippet: `{{${variable.tag}}}`, cursorBack: 0 };
   }
-  return `{{${variable.tag}}}`;
+  const tag = variable.link
+    ? getFindingLink(discoverUrl)
+    : variable.raw
+    ? `{{{_source.${variable.field}}}}`
+    : `{{_source.${variable.field}}}`;
+  return {
+    snippet: insideSampleDocuments ? tag : `${FINDINGS_LOOP_START}${tag} ${FINDINGS_LOOP_END}`,
+    cursorBack: 0,
+  };
 };
 
 /*
  * Without a selection the snippet goes on a new line at the end. A cursor at the end of a line also
- * starts a new line, so the snippet is not glued to the tag before it.
+ * starts a new line, so the snippet is not glued to the tag before it, unless the line ends with a
+ * space the user typed to write it there.
  */
-export const insertText = (text, snippet, selection) => {
+export const insertText = (text, snippet, selection, cursorBack = 0) => {
   if (!selection) {
     const separator = text && !text.endsWith('\n') ? '\n' : '';
     const value = `${text}${separator}${snippet}`;
-    return { value, cursor: value.length };
+    return { value, cursor: value.length - cursorBack };
   }
   const { start, end } = selection;
   const atLineEnd =
     start === end &&
     start > 0 &&
-    text[start - 1] !== '\n' &&
+    !/\s/.test(text[start - 1]) &&
     (start === text.length || text[start] === '\n');
   const inserted = atLineEnd ? `\n${snippet}` : snippet;
   return {
     value: `${text.slice(0, start)}${inserted}${text.slice(end)}`,
-    cursor: start + inserted.length,
+    cursor: start + inserted.length - cursorBack,
   };
 };
 
@@ -185,30 +212,31 @@ export const InsertVariable = ({ name, textAreaRef, indices }) => {
     text,
     selection.current ? selection.current.start : text.length
   );
-  // The index fields can only be inserted inside a sample documents block, so they load there.
-  const { fields, isLoading, hasError } = useIndexFields(indices, isOpen && insideSampleDocuments);
+  const { fields, isLoading, hasError } = useIndexFields(indices, isOpen);
 
-  const commonVariables = getMessageVariables();
+  // A loop inside a loop would print every finding once per finding.
+  const commonVariables = getMessageVariables().filter(
+    (variable) => !(variable.loop && insideSampleDocuments)
+  );
   const fieldVariables = fields.map((field) => ({ id: `field:${field}`, label: field, field }));
   const variablesById = _.keyBy([...commonVariables, ...fieldVariables], 'id');
-  const toOption = (variable) => ({
-    key: variable.id,
-    label: variable.label,
-    'data-test-subj': `insertMessageVariable-${variable.id}`,
-  });
-  // The notes are short enough to fit the list row, which cuts longer text.
+  // The common variables show the field or value they print, which the search also matches.
+  const toOption = (variable) => {
+    const hint = variable.label === variable.field ? undefined : variable.field || variable.tag;
+    return {
+      key: variable.id,
+      label: variable.label,
+      searchableLabel: hint ? `${variable.label} ${hint}` : variable.label,
+      append: hint ? (
+        <EuiText size="xs" color="subdued">
+          {hint}
+        </EuiText>
+      ) : undefined,
+      'data-test-subj': `insertMessageVariable-${variable.id}`,
+    };
+  };
+  // The note is short enough to fit the list row, which cuts longer text.
   const getIndexFieldOptions = () => {
-    if (!insideSampleDocuments) {
-      return [
-        {
-          key: 'indexFieldsOutsideBlock',
-          label: translate('indexFieldsOutsideBlock', 'Only inside {blockTag}', {
-            blockTag: SAMPLE_DOCUMENTS_BLOCK_START,
-          }),
-          disabled: true,
-        },
-      ];
-    }
     if (hasError) {
       return [
         {
@@ -222,8 +250,10 @@ export const InsertVariable = ({ name, textAreaRef, indices }) => {
   };
   const indexFieldOptions = getIndexFieldOptions();
   const options = [
-    { label: translate('commonGroup', 'Common'), isGroupLabel: true },
-    ...commonVariables.map(toOption),
+    { label: translate('findingGroup', 'Finding'), isGroupLabel: true },
+    ...commonVariables.filter((variable) => !variable.tag).map(toOption),
+    { label: translate('executionGroup', 'Execution'), isGroupLabel: true },
+    ...commonVariables.filter((variable) => variable.tag).map(toOption),
     ...(indexFieldOptions.length && !_.isEmpty(indices)
       ? [
           { label: translate('indexFieldsGroup', 'Index fields'), isGroupLabel: true },
@@ -243,11 +273,11 @@ export const InsertVariable = ({ name, textAreaRef, indices }) => {
 
   const onSelect = (variable) => {
     setIsOpen(false);
-    const snippet = getVariableSnippet(variable, {
+    const { snippet, cursorBack } = getVariableSnippet(variable, {
       insideSampleDocuments,
       discoverUrl: getDiscoverUrl(),
     });
-    const { value, cursor } = insertText(text, snippet, selection.current);
+    const { value, cursor } = insertText(text, snippet, selection.current, cursorBack);
     setFieldValue(name, value);
     insertedCursor.current = cursor;
   };
@@ -296,6 +326,8 @@ export const InsertVariable = ({ name, textAreaRef, indices }) => {
         height={300}
         isLoading={isLoading}
         options={options}
+        // The badge of the focused row would push its hint out of the row.
+        listProps={{ onFocusBadge: false }}
         searchProps={{
           compressed: true,
           placeholder: translate('searchPlaceholder', 'Search variables and fields'),
@@ -317,7 +349,8 @@ export const InsertVariable = ({ name, textAreaRef, indices }) => {
         <EuiText size="xs" color="subdued" style={{ maxWidth: 300 }}>
           {/* The alerting app has no intl provider, so the text is not a FormattedMessage. */}
           {i18n.translate('alerting.triggers.action.message.otherFindingFields', {
-            defaultMessage: 'For another field of the finding, write {fieldTag} inside {blockTag}.',
+            defaultMessage:
+              'A finding field prints the value of each finding. To write one by hand, put {fieldTag} inside {blockTag}.',
             values: {
               fieldTag: '{{_source.<field>}}',
               blockTag: SAMPLE_DOCUMENTS_BLOCK_START,

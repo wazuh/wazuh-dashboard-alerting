@@ -23,20 +23,34 @@ const getVariable = (id) => getMessageVariables().find((variable) => variable.id
 describe('getVariableSnippet', () => {
   const discoverUrl = 'https://dashboard.example/app/discover';
 
+  const snippet = (id, insideSampleDocuments) =>
+    getVariableSnippet(getVariable(id), { insideSampleDocuments, discoverUrl }).snippet;
+
   test('prints the field of every finding inside a sample documents block', () => {
-    expect(
-      getVariableSnippet(getVariable('endpointName'), { insideSampleDocuments: true, discoverUrl })
-    ).toBe('{{_source.wazuh.agent.name}}');
+    expect(snippet('endpointName', true)).toBe('{{_source.wazuh.agent.name}}');
   });
 
-  test('prints the field of the first finding elsewhere', () => {
-    expect(getVariableSnippet(getVariable('endpointName'), { discoverUrl })).toBe(
-      '{{ctx.alerts.0.sample_documents.0._source.wazuh.agent.name}}'
+  test('prints the field of every finding in its own loop elsewhere', () => {
+    expect(snippet('endpointName')).toBe(
+      '{{#ctx.alerts}}{{#sample_documents}}{{_source.wazuh.agent.name}} ' +
+        '{{/sample_documents}}{{/ctx.alerts}}'
     );
-    expect(getVariableSnippet(getVariable('findingLink'), { discoverUrl })).toBe(
-      'https://dashboard.example/app/discover#/doc/wazuh-findings-v5%2A/' +
-        '{{ctx.alerts.0.sample_documents.0._index}}?id={{ctx.alerts.0.sample_documents.0._id}}'
+    expect(snippet('findingLink')).toBe(
+      '{{#ctx.alerts}}{{#sample_documents}}https://dashboard.example/app/discover#/doc/' +
+        'wazuh-findings-v5%2A/{{_index}}?id={{_id}} {{/sample_documents}}{{/ctx.alerts}}'
     );
+  });
+
+  test('inserts a loop over the findings with the cursor inside', () => {
+    const { snippet: loop, cursorBack } = getVariableSnippet(getVariable('findingsLoop'), {
+      discoverUrl,
+    });
+    const { value, cursor } = insertText('Hello', loop, null, cursorBack);
+
+    expect(value).toBe(
+      'Hello\n{{#ctx.alerts}}{{#sample_documents}}\n\n{{/sample_documents}}{{/ctx.alerts}}'
+    );
+    expect(value.slice(0, cursor).endsWith('{{#sample_documents}}\n')).toBe(true);
   });
 });
 
@@ -50,6 +64,12 @@ describe('insertText', () => {
       'Hello\nworld',
       { start: 5, end: 5 },
       'Hello\n{{x}}\nworld',
+    ],
+    [
+      'at the cursor after a space at the end of a line',
+      'Hello ',
+      { start: 6, end: 6 },
+      'Hello {{x}}',
     ],
   ])('inserts the text %s', (_description, text, selection, expected) => {
     const { value, cursor } = insertText(text, '{{x}}', selection);
@@ -153,8 +173,14 @@ describe('InsertVariable', () => {
 
     await open(wrapper);
     wrapper.update();
+    const keys = wrapper
+      .find('EuiSelectable')
+      .prop('options')
+      .map((option) => option.key);
     await pick(wrapper, 'field:process.name');
 
+    // A loop is not offered inside another one.
+    expect(keys).not.toContain('findingsLoop');
     expect(mockPost).toHaveBeenCalledWith('/api/alerting/_mappings', {
       body: JSON.stringify({ index: ['wazuh-findings-v5-security'] }),
       query: undefined,
@@ -191,27 +217,37 @@ describe('InsertVariable', () => {
     expect(getKeys()).toContain('field:process.name');
   });
 
-  test('offers and loads the index fields inside a sample documents block only', async () => {
-    const { wrapper } = mountInsertVariable({ message: 'Hello' }, ['wazuh-findings-v5-security']);
+  test('inserts an index field in its own loop outside a sample documents block', async () => {
+    mockPost.mockResolvedValue({
+      ok: true,
+      resp: {
+        'wazuh-findings-v5-security': {
+          mappings: { properties: { process: { properties: { name: { type: 'keyword' } } } } },
+        },
+      },
+    });
+    const { wrapper, formik } = mountInsertVariable({ message: 'Hello' }, [
+      'wazuh-findings-v5-security',
+    ]);
 
     await open(wrapper);
     wrapper.update();
-    const keys = wrapper
-      .find('EuiSelectable')
-      .prop('options')
-      .map((option) => option.key);
+    await pick(wrapper, 'field:process.name');
 
-    expect(keys).toContain('indexFieldsOutsideBlock');
-    expect(mockPost).not.toHaveBeenCalled();
+    expect(formik.values.message).toBe(
+      'Hello\n{{#ctx.alerts}}{{#sample_documents}}{{_source.process.name}} ' +
+        '{{/sample_documents}}{{/ctx.alerts}}'
+    );
   });
 
-  test('explains how to print another field of the finding', async () => {
+  test('explains how finding fields print', async () => {
     const { wrapper } = mountInsertVariable({ message: '' });
 
     await open(wrapper);
 
     expect(wrapper.find('EuiPopoverFooter').text()).toBe(
-      'For another field of the finding, write {{_source.<field>}} inside {{#sample_documents}}.'
+      'A finding field prints the value of each finding. To write one by hand, put ' +
+        '{{_source.<field>}} inside {{#sample_documents}}.'
     );
     // The app renders the menu without an intl provider (console.error is spied in the setup).
     expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('React Intl'));
