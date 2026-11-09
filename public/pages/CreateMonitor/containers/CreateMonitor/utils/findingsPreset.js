@@ -101,7 +101,12 @@ export const getFindingsPresetValues = ({
     query: severity,
   }));
 
-  const action = getInitialActionValues({ monitorType: MONITOR_TYPE.DOC_LEVEL, actions: [] });
+  // The indices give the action the default message of the notifications about findings.
+  const action = getInitialActionValues({
+    monitorType: MONITOR_TYPE.DOC_LEVEL,
+    actions: [],
+    indices,
+  });
   action.name = channelName ? `Notify ${channelName}` : 'Notify channel';
   action.destination_id = channelId;
 

@@ -45,10 +45,11 @@ export const getInitialActionValues = ({
   flyoutMode,
   actions,
   actionType = MANAGED_CHANNEL_CATEGORY.NOTIFICATION,
+  indices,
 }) => {
   switch (actionType) {
     case MANAGED_CHANNEL_CATEGORY.NOTIFICATION: {
-      return getInitialNotificationsValues({ monitorType, flyoutMode, actions });
+      return getInitialNotificationsValues({ monitorType, flyoutMode, actions, indices });
     }
     case MANAGED_CHANNEL_CATEGORY.ACTIVE_RESPONSE: {
       return getInitialActiveResponseValues({ monitorType, flyoutMode, actions });
