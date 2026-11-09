@@ -143,22 +143,38 @@ export const getPreviewFindingIndex = (docId, fallbackIndex) => {
   return separatorPosition === -1 ? fallbackIndex : docId.slice(separatorPosition + 1);
 };
 
+/**
+ * Wazuh: the ExecuteMonitor API keys the matched documents by query ID. A query that was never
+ * saved has no ID, and the backend would give it a random one on every run, so the preview sends
+ * a deterministic ID instead. It contains no `_`, as the backend strips `_<index>_<monitor id>`
+ * suffixes from the matched query IDs.
+ *
+ * @param {object} query document-level query, from the form or from the monitor input
+ * @param {number} queryIndex position of the query in the monitor
+ */
+export const getPreviewQueryId = (query, queryIndex) =>
+  _.isEmpty(query?.id) ? `preview-query-${queryIndex}` : query.id;
+
+// Wazuh: resolve a result key to its query by ID, or by name as before
+const findPreviewQuery = (queries, queryKey) =>
+  _.find(queries, (query, queryIndex) => getPreviewQueryId(query, queryIndex) === queryKey) ||
+  _.find(queries, { queryName: queryKey });
+
 export const parseFindingsForPreview = (previewResponse = {}, index = '', queries = []) => {
   // TODO FIXME: ExecuteMonitor API currently only returns a list of query names/IDs and the relevant docIds.
   //  As a result, the preview dashboard cannot display document contents.
   const findings = [];
   if (validDocLevelGraphQueries(queries)) {
-    const queryNames = queries.map((query) => query.queryName);
     const timestamp = Date.now();
     const docIdsToQueries = {};
-    _.keys(previewResponse).forEach((queryName) => {
-      if (_.includes(queryNames, queryName)) {
-        _.get(previewResponse, queryName, []).forEach((id) => {
+    _.keys(previewResponse).forEach((queryKey) => {
+      const query = findPreviewQuery(queries, queryKey); // Wazuh
+      if (query) {
+        const queryName = query.queryName; // Wazuh
+        _.get(previewResponse, [queryKey], []).forEach((id) => {
           if (_.includes(_.keys(docIdsToQueries), id)) {
-            const query = _.find(queries, { queryName: queryName });
             docIdsToQueries[id].push({ name: queryName, query: query.query });
           } else {
-            const query = _.find(queries, { queryName: queryName });
             const operator = OPERATORS_MAP[_.toUpper(query.operator)].text;
             const querySource = `${query.field} ${operator} ${query.query}`;
             docIdsToQueries[id] = [{ name: queryName, query: querySource }];
