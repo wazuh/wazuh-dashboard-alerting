@@ -14,6 +14,10 @@ import EnhancedAccordion from '../../../../components/FeatureAnywhereContextMenu
 import { getInitialTriggerValues } from './utils';
 import { MONITOR_TYPE } from '../../../../utils/constants';
 
+// Keep the focused query field from blurring on mousedown. The blur validates the field and
+// shifts the layout, so the button moves before mouseup and the first click is lost.
+const keepFieldFocus = (e) => e.preventDefault();
+
 const AddTriggerButton = ({
   arrayHelpers,
   disabled,
@@ -53,7 +57,13 @@ const AddTriggerButton = ({
   }
 
   return (
-    <EuiButton fill={false} size={'s'} onClick={onClick} disabled={disabled}>
+    <EuiButton
+      fill={false}
+      size={'s'}
+      onClick={onClick}
+      onMouseDown={keepFieldFocus}
+      disabled={disabled}
+    >
       {buttonText}
     </EuiButton>
   );

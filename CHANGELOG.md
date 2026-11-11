@@ -30,6 +30,7 @@
 | [#136](https://github.com/wazuh/wazuh-dashboard-alerting/issues/136) | Fixed misleading index pattern hint in the Create Monitor index field for document level monitors |
 | [#189](https://github.com/wazuh/wazuh-dashboard-alerting/issues/189) | Fixed the empty History chart and the trigger bar errors in the monitor details, and hid the Document column of the alerts when alerting findings are not stored |
 | [#188](https://github.com/wazuh/wazuh-dashboard-alerting/issues/188) | Fixed the Per document and Active Response monitor preview, which listed no document findings |
+| [#9465](https://github.com/wazuh/wazuh-dashboard-plugins/issues/9465) | Fixed the "Add trigger" button ignoring the first click while a query field has focus |
 
 ## Prior versions
 

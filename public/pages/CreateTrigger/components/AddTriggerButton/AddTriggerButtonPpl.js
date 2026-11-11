@@ -10,6 +10,10 @@ import { FORMIK_INITIAL_TRIGGER_VALUES } from '../../containers/CreateTrigger/ut
 import EnhancedAccordion from '../../../../components/FeatureAnywhereContextMenu/EnhancedAccordion';
 import { getInitialPplTriggerValues } from './utils';
 
+// Keep the focused query field from blurring on mousedown. The blur validates the field and
+// shifts the layout, so the button moves before mouseup and the first click is lost.
+const keepFieldFocus = (e) => e.preventDefault();
+
 const AddTriggerButtonPpl = ({
   arrayHelpers,
   disabled,
@@ -47,7 +51,13 @@ const AddTriggerButtonPpl = ({
   }
 
   return (
-    <EuiButton fill={false} size={'s'} onClick={onClick} disabled={disabled}>
+    <EuiButton
+      fill={false}
+      size={'s'}
+      onClick={onClick}
+      onMouseDown={keepFieldFocus}
+      disabled={disabled}
+    >
       {buttonText}
     </EuiButton>
   );

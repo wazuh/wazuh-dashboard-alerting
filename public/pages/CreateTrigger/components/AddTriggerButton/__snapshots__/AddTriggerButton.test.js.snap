@@ -4,6 +4,7 @@ exports[`AddTriggerButton renders 1`] = `
 <EuiButton
   fill={false}
   onClick={[Function]}
+  onMouseDown={[Function]}
   size="s"
 >
   Add trigger
