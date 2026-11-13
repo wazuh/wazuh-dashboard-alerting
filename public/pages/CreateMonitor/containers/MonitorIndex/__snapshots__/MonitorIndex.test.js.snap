@@ -117,7 +117,6 @@ exports[`MonitorIndex renders 1`] = `
           ],
           "placeholder": "Select indices",
           "renderOption": [Function],
-          "singleSelection": false,
         }
       }
       name="index"
@@ -632,7 +631,6 @@ exports[`MonitorIndex renders 1`] = `
                         ],
                         "placeholder": "Select indices",
                         "renderOption": [Function],
-                        "singleSelection": false,
                       }
                     }
                     name="index"

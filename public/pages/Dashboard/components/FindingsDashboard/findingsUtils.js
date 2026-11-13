@@ -7,6 +7,7 @@ import React from 'react';
 import _ from 'lodash';
 import { renderTime } from '../../utils/tableUtils';
 import FindingFlyout from './FindingFlyout';
+import AlertFindingLink from './AlertFindingLink'; // Wazuh
 import FindingsPopover from './FindingsPopover';
 import queryString from 'query-string';
 import { backendErrorNotification } from '../../../../utils/helpers';
@@ -53,17 +54,20 @@ export const getAlertsFindingColumn = (
     render: (related_doc_ids, alert) => {
       if (_.isEmpty(related_doc_ids))
         console.log('Alerts index contains an entry with 0 related document IDs:', alert);
+      // Wazuh: the alerts raised before the alerting findings were stored have no finding to open.
       return (
-        <FindingFlyout
-          alert={alert}
-          httpClient={httpClient}
-          history={history}
-          location={location}
-          notifications={notifications}
-          dashboardFlyoutIsOpen={flyoutIsOpen}
-          openFlyout={openFlyout}
-          closeFlyout={closeFlyout}
-        />
+        <AlertFindingLink alert={alert} httpClient={httpClient}>
+          <FindingFlyout
+            alert={alert}
+            httpClient={httpClient}
+            history={history}
+            location={location}
+            notifications={notifications}
+            dashboardFlyoutIsOpen={flyoutIsOpen}
+            openFlyout={openFlyout}
+            closeFlyout={closeFlyout}
+          />
+        </AlertFindingLink>
       );
     },
   };
@@ -126,22 +130,51 @@ export const getFindingsForMonitor = (findings = [], monitorId = '') => {
   return { findings: monitorFindings, totalFindings: monitorFindings.length };
 };
 
+/**
+ * Wazuh: the ExecuteMonitor API identifies a matched document as `<doc id>|<index>`, which tells
+ * the index of each finding when the monitor runs over several indices. Index names cannot contain
+ * a `|`, so the index is whatever follows the last one.
+ *
+ * @param {string} docId document ID returned by the ExecuteMonitor API
+ * @param {string} fallbackIndex index used when the document ID does not name one
+ */
+export const getPreviewFindingIndex = (docId, fallbackIndex) => {
+  const separatorPosition = docId.lastIndexOf('|');
+  return separatorPosition === -1 ? fallbackIndex : docId.slice(separatorPosition + 1);
+};
+
+/**
+ * Wazuh: the ExecuteMonitor API keys the matched documents by query ID. A query that was never
+ * saved has no ID, and the backend would give it a random one on every run, so the preview sends
+ * a deterministic ID instead. It contains no `_`, as the backend strips `_<index>_<monitor id>`
+ * suffixes from the matched query IDs.
+ *
+ * @param {object} query document-level query, from the form or from the monitor input
+ * @param {number} queryIndex position of the query in the monitor
+ */
+export const getPreviewQueryId = (query, queryIndex) =>
+  _.isEmpty(query?.id) ? `preview-query-${queryIndex}` : query.id;
+
+// Wazuh: resolve a result key to its query by ID, or by name as before
+const findPreviewQuery = (queries, queryKey) =>
+  _.find(queries, (query, queryIndex) => getPreviewQueryId(query, queryIndex) === queryKey) ||
+  _.find(queries, { queryName: queryKey });
+
 export const parseFindingsForPreview = (previewResponse = {}, index = '', queries = []) => {
   // TODO FIXME: ExecuteMonitor API currently only returns a list of query names/IDs and the relevant docIds.
   //  As a result, the preview dashboard cannot display document contents.
   const findings = [];
   if (validDocLevelGraphQueries(queries)) {
-    const queryNames = queries.map((query) => query.queryName);
     const timestamp = Date.now();
     const docIdsToQueries = {};
-    _.keys(previewResponse).forEach((queryName) => {
-      if (_.includes(queryNames, queryName)) {
-        _.get(previewResponse, queryName, []).forEach((id) => {
+    _.keys(previewResponse).forEach((queryKey) => {
+      const query = findPreviewQuery(queries, queryKey); // Wazuh
+      if (query) {
+        const queryName = query.queryName; // Wazuh
+        _.get(previewResponse, [queryKey], []).forEach((id) => {
           if (_.includes(_.keys(docIdsToQueries), id)) {
-            const query = _.find(queries, { queryName: queryName });
             docIdsToQueries[id].push({ name: queryName, query: query.query });
           } else {
-            const query = _.find(queries, { queryName: queryName });
             const operator = OPERATORS_MAP[_.toUpper(query.operator)].text;
             const querySource = `${query.field} ${operator} ${query.query}`;
             docIdsToQueries[id] = [{ name: queryName, query: querySource }];
@@ -151,7 +184,7 @@ export const parseFindingsForPreview = (previewResponse = {}, index = '', querie
     });
     _.keys(docIdsToQueries).forEach((docId) => {
       const finding = {
-        index: index,
+        index: getPreviewFindingIndex(docId, index), // Wazuh
         related_doc_id: docId,
         queries: docIdsToQueries[docId],
         timestamp: timestamp,

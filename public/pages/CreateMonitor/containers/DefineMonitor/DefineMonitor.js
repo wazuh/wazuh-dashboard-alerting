@@ -47,6 +47,8 @@ import { FORMIK_INITIAL_VALUES } from '../CreateMonitor/utils/constants';
 import { API_TYPES } from '../../components/ClusterMetricsMonitor/utils/clusterMetricsMonitorConstants';
 import ConfigureDocumentLevelQueries from '../../components/DocumentLevelMonitorQueries/ConfigureDocumentLevelQueries';
 import FindingsDashboard from '../../../Dashboard/containers/FindingsDashboard';
+import { getPreviewQueryId } from '../../../Dashboard/components/FindingsDashboard/findingsUtils'; // Wazuh
+import { DOC_LEVEL_INPUT_FIELD } from '../../components/DocumentLevelMonitorQueries/utils/constants'; // Wazuh
 import { validDocLevelGraphQueries } from '../../components/DocumentLevelMonitorQueries/utils/helpers';
 import { validateWhereFilters } from '../../components/MonitorExpressions/expressions/utils/whereHelpers';
 import {
@@ -408,7 +410,13 @@ class DefineMonitor extends Component {
         // 2. The UI generated query that gets [BUCKET_COUNT] times the aggregated buckets to show past history of query
         // If the query is an extraction query, we can use the same query for results and query performance
         requests = [buildRequest(values)];
-        requests.push(buildRequest(values, false));
+        // Wazuh: document-level monitors build the same request for both, and concurrent dry runs
+        // share their matched queries, so they run once
+        if (
+          monitor_type !== MONITOR_TYPE.DOC_LEVEL &&
+          monitor_type !== MONITOR_TYPE.ACTIVE_RESPONSE
+        )
+          requests.push(buildRequest(values, false));
         break;
       case SEARCH_TYPE.CLUSTER_METRICS:
         requests = [buildClusterMetricsRequest(values)];
@@ -429,6 +437,22 @@ class DefineMonitor extends Component {
           case SEARCH_TYPE.QUERY:
           case SEARCH_TYPE.GRAPH:
             _.set(monitor, 'inputs[0]', request);
+            // Wazuh: send query IDs the preview can map the matched documents back to
+            if (
+              searchType === SEARCH_TYPE.GRAPH &&
+              (monitor_type === MONITOR_TYPE.DOC_LEVEL ||
+                monitor_type === MONITOR_TYPE.ACTIVE_RESPONSE)
+            ) {
+              const queriesPath = ['inputs', 0, DOC_LEVEL_INPUT_FIELD, 'queries'];
+              _.set(
+                monitor,
+                queriesPath,
+                _.get(monitor, queriesPath, []).map((query, queryIndex) => ({
+                  ...query,
+                  id: getPreviewQueryId(query, queryIndex),
+                }))
+              );
+            }
             break;
           case SEARCH_TYPE.CLUSTER_METRICS:
             _.set(monitor, 'inputs[0].uri', request);
