@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+// Wazuh: `useRef` keeps the message textarea to insert variables at its cursor.
+// import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import _ from 'lodash';
 import Mustache from 'mustache';
 import {
@@ -35,6 +37,14 @@ import {
 import { URL, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../../../../../utils/constants';
 import { MONITOR_TYPE } from '../../../../../utils/constants';
 import OverviewStat from '../../../../MonitorDetails/components/OverviewStat';
+// Wazuh: insert finding variables and note the dashboard address used by finding links.
+import { i18n } from '@osd/i18n';
+import { InsertVariable } from './insert-variable';
+import {
+  getDashboardUrl,
+  hasFindingLink,
+  isFindingsMonitor,
+} from '../../AddActionButton/findings-message';
 
 export const NOTIFY_OPTIONS_VALUES = {
   PER_ALERT: 'per_alert',
@@ -138,14 +148,23 @@ export default function Message(
     .props
 ) {
   const [displayPreview, setDisplayPreview] = useState(false);
+  // Wazuh: the variables are inserted at the cursor of the message.
+  const messageTextAreaRef = useRef(null);
   const onDisplayPreviewChange = (e) => setDisplayPreview(e.target.checked);
   const monitorType = _.get(context, 'ctx.monitor.monitor_type', MONITOR_TYPE.QUERY_LEVEL);
   const editableActionExecutionPolicy =
     monitorType === MONITOR_TYPE.BUCKET_LEVEL ||
     monitorType === MONITOR_TYPE.DOC_LEVEL ||
     monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
+  // Wazuh: per document and active response monitors notify about documents.
+  const isDocumentMonitor =
+    monitorType === MONITOR_TYPE.DOC_LEVEL || monitorType === MONITOR_TYPE.ACTIVE_RESPONSE;
+  const monitorIndices = _.get(context, 'ctx.monitor.inputs[0].doc_level_input.indices');
+  const isFindingsDocumentMonitor = isDocumentMonitor && isFindingsMonitor(monitorIndices);
 
   const actionPath = `${fieldPath}actions.${index}`;
+  // Wazuh: the Insert variable menu writes the message through its form path.
+  const messagePath = `${actionPath}.message_template.source`;
   const actionExecutionPolicyPath = editableActionExecutionPolicy
     ? `${actionPath}.action_execution_policy`
     : actionPath;
@@ -157,8 +176,11 @@ export default function Message(
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_ALERT;
       break;
     case MONITOR_TYPE.DOC_LEVEL:
-    case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_EXECUTION;
+      break;
+    // Wazuh: the indexer only accepts actions per alert on active response monitors.
+    case MONITOR_TYPE.ACTIVE_RESPONSE:
+      defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_ALERT;
       break;
     default:
       defaultNotifyOption = NOTIFY_OPTIONS_VALUES.PER_EXECUTION;
@@ -251,6 +273,22 @@ export default function Message(
               </EuiText>
             </div>
           ),
+          // Wazuh: per document monitors over findings can insert the fields of a finding.
+          labelAppend: isFindingsDocumentMonitor ? (
+            <InsertVariable
+              name={messagePath}
+              textAreaRef={messageTextAreaRef}
+              indices={monitorIndices}
+            />
+          ) : undefined,
+          // Wazuh: the finding links keep the dashboard address used when the action was created.
+          helpText: hasFindingLink(_.get(action, 'message_template.source'))
+            ? i18n.translate('alerting.triggers.action.message.findingLinkAddress', {
+                defaultMessage:
+                  'Links to findings use {dashboardUrl}. Edit them if recipients reach the dashboard at another address.',
+                values: { dashboardUrl: getDashboardUrl() },
+              })
+            : undefined,
           style: { maxWidth: '100%' },
           isInvalid,
           error: hasError,
@@ -259,6 +297,11 @@ export default function Message(
           placeholder: 'Can use mustache templates',
           fullWidth: true,
           isInvalid,
+          inputRef: messageTextAreaRef, // Wazuh: the Insert variable menu reads the cursor position.
+          // Wazuh: the findings default message has many lines, so the box grows with the message.
+          rows: isDocumentMonitor
+            ? _.clamp((_.get(action, 'message_template.source') || '').split('\n').length, 3, 20)
+            : undefined,
         }}
       />
 
@@ -308,6 +351,8 @@ export default function Message(
                   value: NOTIFY_OPTIONS_VALUES.PER_EXECUTION,
                   checked: actionExecutionScopeId === NOTIFY_OPTIONS_VALUES.PER_EXECUTION,
                   label: NOTIFY_OPTIONS_LABELS.PER_EXECUTION,
+                  // Wazuh: the indexer rejects actions per execution on active response monitors.
+                  disabled: monitorType === MONITOR_TYPE.ACTIVE_RESPONSE,
                   onChange: (e, field, form) => field.onChange(e),
                 }}
               />

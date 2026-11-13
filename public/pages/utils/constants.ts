@@ -8,6 +8,8 @@ import { BehaviorSubject } from 'rxjs';
 import { DataSourceOption } from "../../../../../src/plugins/data_source_management/public";
 
 export const COMMENTS_ENABLED_SETTING = "plugins.alerting.comments_enabled";
+// Wazuh: the Wazuh indexer does not store alerting findings by default.
+export const ALERT_FINDING_ENABLED_SETTING = 'plugins.alerting.alert_finding_enabled';
 const LocalCluster: DataSourceOption = {
   label: i18n.translate("dataSource.localCluster", {
     defaultMessage: "Local cluster",

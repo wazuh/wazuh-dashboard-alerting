@@ -8,6 +8,7 @@ import { getDataSourceEnabled, getDataSource, getAssistantClient } from '../../s
 import _ from 'lodash';
 import { ShowAlertComments } from '../../components/Comments/ShowAlertComments';
 import {
+  ALERT_FINDING_ENABLED_SETTING,
   COMMENTS_ENABLED_SETTING,
   SUMMARY_AGENT_CONFIG_ID,
   LOG_PATTERN_SUMMARY_AGENT_CONFIG_ID,
@@ -107,6 +108,25 @@ export async function getIsCommentsEnabled(httpClient) {
   }
 
   return commentsEnabled;
+}
+
+/**
+ * Wazuh: whether the alerting findings are stored, so the finding of an alert can be opened.
+ *
+ * @param {object} httpClient
+ */
+export async function getIsAlertFindingEnabled(httpClient) {
+  const alertFindingEnabled = await getClusterSetting(
+    httpClient,
+    ALERT_FINDING_ENABLED_SETTING,
+    false
+  );
+
+  if (typeof alertFindingEnabled === 'string') {
+    return JSON.parse(alertFindingEnabled);
+  }
+
+  return alertFindingEnabled;
 }
 
 export async function getClusterSetting(httpClient, setting, defaultValue) {
