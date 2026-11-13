@@ -15,6 +15,16 @@ export function createReasonableWait(cb) {
   return setTimeout(cb, 100);
 }
 
+// Wazuh: matches OpenSearch data stream backing indices (e.g., .ds-wazuh-alerts-000001)
+const DATA_STREAM_BACKING_INDEX_PATTERN = /^\.ds-(.+)-\d+$/;
+
+/**
+ * Wazuh: returns the data stream an index backs, or undefined when it is not a backing index.
+ */
+export function getDataStreamName(index) {
+  return index.match(DATA_STREAM_BACKING_INDEX_PATTERN)?.[1];
+}
+
 const MAX_NUMBER_OF_MATCHING_INDICES = 100;
 
 export function filterSystemIndices(indices, isIncludingSystemIndices) {

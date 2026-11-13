@@ -149,6 +149,65 @@ describe('DefineMonitor', () => {
     expect(onRunQuery).toHaveBeenCalledTimes(2); // on update
   });
 
+  // Wazuh: the preview maps the matched documents back to the queries by ID
+  test('onRunQuery sends an ID for every document-level query', async () => {
+    const queryValues = {
+      field: 'field.name',
+      operator: 'is',
+      query: 'value',
+      tags: [],
+    };
+    const values = {
+      ...FORMIK_INITIAL_VALUES,
+      monitor_type: 'doc_level_monitor',
+      searchType: 'graph',
+      index: [],
+      queries: [
+        { ...queryValues, id: undefined, queryName: 'unsaved' },
+        { ...queryValues, id: 'savedId', queryName: 'saved' },
+      ],
+    };
+    const wrapper = getShallowWrapper({ values });
+
+    await wrapper.instance().onRunQuery();
+
+    expect(httpClientMock.post).toHaveBeenCalled();
+    httpClientMock.post.mock.calls.forEach(([, { body }]) => {
+      const { queries } = JSON.parse(body).inputs[0].doc_level_input;
+      expect(queries.map(({ id }) => id)).toEqual(['preview-query-0', 'savedId']);
+    });
+    expect(values.queries[0].id).toBeUndefined();
+  });
+
+  // Wazuh: concurrent dry runs of document-level monitors mix up their results
+  test('onRunQuery runs a document-level graph preview once', async () => {
+    httpClientMock.post.mockResolvedValue({
+      ok: true,
+      resp: {
+        input_results: { results: [{ 'preview-query-0': ['docId1|index', 'docId2|index'] }] },
+      },
+    });
+    const values = {
+      ...FORMIK_INITIAL_VALUES,
+      monitor_type: 'doc_level_monitor',
+      searchType: 'graph',
+      index: [],
+      queries: [
+        { queryName: 'query', field: 'field.name', operator: 'is', query: 'value', tags: [] },
+      ],
+    };
+    const wrapper = getShallowWrapper({ values });
+
+    await wrapper.instance().onRunQuery();
+
+    expect(httpClientMock.post).toHaveBeenCalledTimes(1);
+    expect(httpClientMock.post).toHaveBeenCalledWith(
+      '../api/alerting/monitors/_execute',
+      expect.anything()
+    );
+    expect(wrapper.state().performanceResponse.hits.total.value).toBe(2);
+  });
+
   test('resetResponse should reset the query responses', () => {
     const wrapper = getShallowWrapper();
     wrapper.setState({ response: {}, performanceResponse: {} });

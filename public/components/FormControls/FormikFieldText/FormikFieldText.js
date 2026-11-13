@@ -36,7 +36,7 @@ const FieldText = ({
   name,
   form,
   field,
-  inputProps: { onChange, isInvalid, onFocus, ...rest },
+  inputProps: { onChange, isInvalid, onFocus, onBlur, ...rest },
 }) => (
   <EuiCompressedFieldText
     {...field}
@@ -45,6 +45,7 @@ const FieldText = ({
       typeof onChange === 'function' ? onChange(e, field, form) : field.onChange(e)
     }
     onFocus={typeof onFocus === 'function' ? (e) => onFocus(e, field, form) : onFocus}
+    onBlur={typeof onBlur === 'function' ? (e) => onBlur(e, field, form) : field.onBlur}
     isInvalid={typeof isInvalid === 'function' ? isInvalid(name, form) : isInvalid}
   />
 );

@@ -32,13 +32,19 @@ const FormikFieldNumber = ({
   />
 );
 
-const FieldNumber = ({ name, form, field, inputProps: { onChange, isInvalid, ...rest } }) => (
+const FieldNumber = ({
+  name,
+  form,
+  field,
+  inputProps: { onChange, isInvalid, onBlur, ...rest },
+}) => (
   <EuiCompressedFieldNumber
     {...field}
     {...rest}
     onChange={(e) =>
       typeof onChange === 'function' ? onChange(e, field, form) : field.onChange(e)
     }
+    onBlur={typeof onBlur === 'function' ? (e) => onBlur(e, field, form) : field.onBlur}
     isInvalid={typeof isInvalid === 'function' ? isInvalid(name, form) : isInvalid}
   />
 );

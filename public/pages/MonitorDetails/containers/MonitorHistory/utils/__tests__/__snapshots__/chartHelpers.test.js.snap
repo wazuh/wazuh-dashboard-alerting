@@ -175,7 +175,7 @@ Object {
             "startTime": 1540828800000,
           },
           "source": "def alertsWindow = new ArrayList();
-                      def startTime = doc.start_time.value.millis < params.startTime ? params.startTime : doc.start_time.value.millis;
+                      def startTime = doc.start_time.value.toInstant().toEpochMilli() < params.startTime ? params.startTime : doc.start_time.value.toInstant().toEpochMilli();
                       def endTime;
                       /*
                         Painless script returns default dateTime epoch for null date fields instead of returning null.
@@ -187,7 +187,7 @@ Object {
                       if(doc.end_time.size() == 0) {
                         endTime = params.endTime
                       } else {
-                        endTime = doc.end_time.value.millis;
+                        endTime = doc.end_time.value.toInstant().toEpochMilli();
                       }
                       while(startTime <= endTime) {
                            alertsWindow.add(startTime);

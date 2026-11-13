@@ -63,6 +63,7 @@ import {
 import {
   appendCommentsAction,
   getDataSourceId,
+  getIsAlertFindingEnabled, // Wazuh
   getIsCommentsEnabled,
 } from '../../../../pages/utils/helpers';
 
@@ -100,6 +101,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       tabId: TABLE_TAB_IDS.ALERTS.id,
       totalAlerts: 0,
       commentsEnabled: false,
+      alertFindingEnabled: false, // Wazuh
     };
   }
 
@@ -121,6 +123,10 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       this.setState({
         commentsEnabled,
       });
+    });
+    // Wazuh
+    getIsAlertFindingEnabled(this.props.httpClient).then((alertFindingEnabled) => {
+      this.setState({ alertFindingEnabled });
     });
   }
 
@@ -150,11 +156,13 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       );
     }
 
-    const { monitorType, commentsEnabled, tabId } = this.state;
+    const { monitorType, commentsEnabled, alertFindingEnabled, tabId } = this.state;
     if (
       ([MONITOR_TYPE.DOC_LEVEL, MONITOR_TYPE.COMPOSITE_LEVEL, MONITOR_TYPE.ACTIVE_RESPONSE].includes(monitorType) &&
         !_.isEqual(prevState.selectedItems, this.state.selectedItems)) ||
-      (tabId === TABLE_TAB_IDS.ALERTS.id && commentsEnabled !== prevState.commentsEnabled)
+      (tabId === TABLE_TAB_IDS.ALERTS.id && commentsEnabled !== prevState.commentsEnabled) ||
+      // Wazuh
+      (tabId === TABLE_TAB_IDS.ALERTS.id && alertFindingEnabled !== prevState.alertFindingEnabled)
     )
       this.setState({ tabContent: this.renderAlertsTable() });
   }
@@ -327,6 +335,7 @@ export default class AlertsDashboardFlyoutComponent extends Component {
       sortField,
       totalAlerts,
       commentsEnabled,
+      alertFindingEnabled,
     } = this.state;
 
     const detectorId = _.get(monitor, MONITOR_INPUT_DETECTOR_ID);
@@ -358,11 +367,14 @@ export default class AlertsDashboardFlyoutComponent extends Component {
         case MONITOR_TYPE.DOC_LEVEL:
         case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           columns = _.cloneDeep(queryColumns);
-          columns.splice(
-            0,
-            0,
-            getAlertsFindingColumn(httpClient, history, location, notifications)
-          );
+          // Wazuh: the Document column opens the finding of the alert, which only exists when the
+          // alerting findings are stored.
+          if (alertFindingEnabled)
+            columns.splice(
+              0,
+              0,
+              getAlertsFindingColumn(httpClient, history, location, notifications)
+            );
           break;
         case MONITOR_TYPE.COMPOSITE_LEVEL:
           columns = _.cloneDeep(queryColumns);

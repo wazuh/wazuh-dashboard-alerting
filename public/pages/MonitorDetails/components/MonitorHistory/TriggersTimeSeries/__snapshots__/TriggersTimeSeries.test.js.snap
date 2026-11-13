@@ -52,21 +52,21 @@ exports[`<TriggersTimeSeries/> renders 1`] = `
                     style="opacity:1;stroke:#6AAF35;fill:#6AAF35"
                     width="5"
                     x="-5"
-                    y="NaN"
+                    y="-32.375"
                   />
                   <rect
                     height="29.75"
                     style="opacity:1;stroke:#D0021B;fill:#D0021B"
                     width="1"
                     x="-6"
-                    y="NaN"
+                    y="-32.375"
                   />
                   <rect
                     height="29.75"
                     style="opacity:1;stroke:#6AAF35;fill:#6AAF35"
                     width="4"
                     x="-10"
-                    y="NaN"
+                    y="-32.375"
                   />
                 </g>
               </svg>
