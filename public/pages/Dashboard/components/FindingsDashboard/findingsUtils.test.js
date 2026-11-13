@@ -4,7 +4,12 @@
  */
 
 import _ from 'lodash';
-import { getFindingsForMonitor, parseFindingsForPreview } from './findingsUtils';
+import {
+  getFindingsForMonitor,
+  getPreviewFindingIndex, // Wazuh
+  getPreviewQueryId, // Wazuh
+  parseFindingsForPreview,
+} from './findingsUtils';
 import { SUPPORTED_DOC_LEVEL_QUERY_OPERATORS } from '../../../CreateMonitor/components/DocumentLevelMonitorQueries/utils/constants';
 
 describe('findingsUtils', () => {
@@ -230,6 +235,82 @@ describe('findingsUtils', () => {
         });
         expect(output.length).toEqual(expectedOutput.length);
       });
+    });
+  });
+  // Wazuh
+  describe('getPreviewFindingIndex', () => {
+    test('returns the index named by the document ID', () => {
+      expect(getPreviewFindingIndex('docId|.ds-wazuh-findings-v5-security-000001', 'index')).toBe(
+        '.ds-wazuh-findings-v5-security-000001'
+      );
+    });
+
+    test('splits at the last separator, as document IDs can contain one', () => {
+      expect(getPreviewFindingIndex('doc|Id|indexName', 'index')).toBe('indexName');
+    });
+
+    test('falls back to the given index when the document ID does not name one', () => {
+      expect(getPreviewFindingIndex('docId', 'index')).toBe('index');
+    });
+  });
+
+  // Wazuh: monitors over several indices find documents in each of them
+  test('parseFindingsForPreview sets the index of each finding', () => {
+    const queries = [
+      {
+        id: 'query1',
+        queryName: 'query1',
+        field: 'field.name',
+        operator: SUPPORTED_DOC_LEVEL_QUERY_OPERATORS[0],
+        query: 'value1',
+        tags: [],
+      },
+    ];
+    const previewResponse = { query1: ['docId1|indexA', 'docId2|indexB'] };
+
+    const output = parseFindingsForPreview(previewResponse, 'indexA', queries);
+
+    expect(output.map(({ index, related_doc_id }) => [index, related_doc_id])).toEqual([
+      ['indexA', 'docId1|indexA'],
+      ['indexB', 'docId2|indexB'],
+    ]);
+  });
+
+  // Wazuh: the ExecuteMonitor API keys the matched documents by query ID
+  describe('preview query IDs', () => {
+    const query = (id, queryName) => ({
+      id,
+      queryName,
+      field: 'field.name',
+      operator: SUPPORTED_DOC_LEVEL_QUERY_OPERATORS[0],
+      query: 'value',
+      tags: [],
+    });
+    const findingsOf = (output) =>
+      output.map(({ related_doc_id, queries }) => [related_doc_id, queries]);
+
+    test('getPreviewQueryId keeps a saved ID and derives one from the position otherwise', () => {
+      expect(getPreviewQueryId(query('savedId', 'name'), 0)).toBe('savedId');
+      expect(getPreviewQueryId(query(undefined, 'name'), 1)).toBe('preview-query-1');
+      expect(getPreviewQueryId(query('', 'name'), 2)).toBe('preview-query-2');
+    });
+
+    test('parseFindingsForPreview maps the results of unsaved queries by their preview ID', () => {
+      const queries = [query(undefined, 'first'), query(undefined, 'second')];
+      const previewResponse = { 'preview-query-1': ['docId1|index'] };
+
+      expect(findingsOf(parseFindingsForPreview(previewResponse, 'index', queries))).toEqual([
+        ['docId1|index', [{ name: 'second', query: 'field.name is value' }]],
+      ]);
+    });
+
+    test('parseFindingsForPreview maps the results of saved queries by their ID', () => {
+      const queries = [query('savedId', 'saved')];
+      const previewResponse = { savedId: ['docId1|index'] };
+
+      expect(findingsOf(parseFindingsForPreview(previewResponse, 'index', queries))).toEqual([
+        ['docId1|index', [{ name: 'saved', query: 'field.name is value' }]],
+      ]);
     });
   });
 });

@@ -78,4 +78,33 @@ describe('Dashboard', () => {
     expect(renderedDashboard.prop('perAlertView')).toBe(perAlertView);
     expect(renderedDashboard.prop('monitorIds')).toEqual(['monitor-1']);
   });
+
+  // Wazuh: the Document column opens the finding of the alert, which is only stored when the
+  // alerting findings are enabled.
+  test.each([
+    [true, true],
+    [false, false],
+  ])(
+    'shows the Document column of a per document monitor when findings are enabled: %s',
+    (alertFindingEnabled, hasDocumentColumn) => {
+      const wrapper = shallow(
+        <DashboardClassic
+          httpClient={httpClientMock}
+          history={historyMock}
+          location={location}
+          notifications={{}}
+          perAlertView={true}
+          monitorType="doc_level_monitor"
+          monitorIds={['monitorId']}
+        />
+      );
+      wrapper.setState({ alertFindingEnabled });
+
+      const columnNames = wrapper
+        .find('EuiBasicTable')
+        .prop('columns')
+        .map(({ name }) => name);
+      expect(columnNames.includes('Document')).toBe(hasDocumentColumn);
+    }
+  );
 });

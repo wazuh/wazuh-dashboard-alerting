@@ -46,6 +46,7 @@ import {
   isDataSourceChanged,
   getDataSourceId,
   appendCommentsAction,
+  getIsAlertFindingEnabled, // Wazuh
   getIsCommentsEnabled,
   getIsAgentConfigured,
   dataSourceEnabled,
@@ -87,6 +88,7 @@ export default class DashboardClassic extends Component {
       totalTriggers: 0,
       chainedAlert: undefined,
       commentsEnabled: false,
+      alertFindingEnabled: false, // Wazuh
       isAgentConfigured: false,
     };
   }
@@ -126,6 +128,10 @@ export default class DashboardClassic extends Component {
     );
     getIsCommentsEnabled(this.props.httpClient).then((commentsEnabled) => {
       this.setState({ commentsEnabled });
+    });
+    // Wazuh
+    getIsAlertFindingEnabled(this.props.httpClient).then((alertFindingEnabled) => {
+      this.setState({ alertFindingEnabled });
     });
     this.getUpdatedAgentConfig();
   }
@@ -453,6 +459,7 @@ export default class DashboardClassic extends Component {
       totalAlerts,
       totalTriggers,
       commentsEnabled,
+      alertFindingEnabled,
       isAgentConfigured,
     } = this.state;
     const {
@@ -485,19 +492,22 @@ export default class DashboardClassic extends Component {
         case MONITOR_TYPE.DOC_LEVEL:
         case MONITOR_TYPE.ACTIVE_RESPONSE: // Wazuh: Handle Active Response monitor type
           columns = _.cloneDeep(queryColumns);
-          columns.splice(
-            0,
-            0,
-            getAlertsFindingColumn(
-              httpClient,
-              history,
-              location,
-              notifications,
-              flyoutIsOpen,
-              this.openFlyout,
-              this.closeFlyout
-            )
-          );
+          // Wazuh: the Document column opens the finding of the alert, which only exists when the
+          // alerting findings are stored.
+          if (alertFindingEnabled)
+            columns.splice(
+              0,
+              0,
+              getAlertsFindingColumn(
+                httpClient,
+                history,
+                location,
+                notifications,
+                flyoutIsOpen,
+                this.openFlyout,
+                this.closeFlyout
+              )
+            );
           break;
         case MONITOR_TYPE.COMPOSITE_LEVEL:
           columns = _.cloneDeep(queryColumns);

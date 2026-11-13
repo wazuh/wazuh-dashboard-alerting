@@ -98,6 +98,14 @@ class DocumentLevelQuery extends Component {
     }, DEBOUNCE_DELAY);
   };
 
+  // Apply the pending debounced value right away when the input loses focus. Otherwise Formik
+  // validates the stale value on blur, shows "Required" and the layout shift swallows the click.
+  flushDebouncedChange = (stateKey) => (e, field, form) => {
+    clearTimeout(this.debounceTimers[stateKey]);
+    form.setFieldValue(field.name, this.state[stateKey]);
+    form.setFieldTouched(field.name, true);
+  };
+
   initializeFieldDataType() {
     const { dataTypes, query } = this.props;
     const indexFieldOptions = getIndexFields(dataTypes, ALLOWED_DATA_TYPES);
@@ -131,6 +139,7 @@ class DocumentLevelQuery extends Component {
                 isInvalid,
                 value: this.state.queryNameValue,
                 onChange: this.handleDebouncedChange('queryNameValue'),
+                onBlur: this.flushDebouncedChange('queryNameValue'),
                 'data-test-subj': `documentLevelQuery_queryName${queryIndex}`,
               }}
             />
@@ -212,6 +221,7 @@ class DocumentLevelQuery extends Component {
                   isInvalid,
                   value: this.state.queryValue,
                   onChange: this.handleDebouncedChange('queryValue'),
+                  onBlur: this.flushDebouncedChange('queryValue'),
                   'data-test-subj': `documentLevelQuery_query${queryIndex}`,
                 }}
               />
@@ -232,6 +242,7 @@ class DocumentLevelQuery extends Component {
                   isInvalid,
                   value: this.state.queryValue,
                   onChange: this.handleDebouncedChange('queryValue'),
+                  onBlur: this.flushDebouncedChange('queryValue'),
                   'data-test-subj': `documentLevelQuery_query${queryIndex}`,
                 }}
               />

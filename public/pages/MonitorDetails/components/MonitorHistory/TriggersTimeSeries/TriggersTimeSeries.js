@@ -73,7 +73,9 @@ class TriggersTimeSeries extends Component {
                                 : dataPoint.state
                             ]
                           }
-                          getY={() => 0}
+                          // Wazuh: the ordinal y domain holds the value as the string '0', so a numeric 0
+                          // is not found in it and every bar was drawn with `y="NaN"`.
+                          getY={() => '0'}
                         >
                           <HorizontalBarSeries
                             data={triggersData[currentTrigger.id]}
