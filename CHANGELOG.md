@@ -20,6 +20,7 @@
 | [#86](https://github.com/wazuh/wazuh-dashboard-alerting/issues/86) | Hide `Document findings` tab in Active Response and Per document monitor details |
 | [#186](https://github.com/wazuh/wazuh-dashboard-alerting/issues/186) | Allow selecting multiple indices in Active Response and Per document monitors, and watch every findings category in the findings preset |
 | [#9451](https://github.com/wazuh/wazuh-dashboard-plugins/issues/9451) | Include the finding title, severity, endpoint, user, source and a link to the finding in the default message of Per document and Active response monitors over findings, and offer these and the other fields of the monitor indices as variables in the message editor |
+| [wazuh-dashboard#1779](https://github.com/wazuh/wazuh-dashboard/issues/1779) | Changed the Node.js version used for development and CI from `22.22.0` to `22.23.4` |
 
 ### Fixed
 
